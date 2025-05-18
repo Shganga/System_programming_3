@@ -18,18 +18,22 @@ public:
     void arrest(Player& target);
     void sanction(Player& target);
     void coup(Player& target);
+    virtual std::string get_type() const = 0;
 
 
     std::string getName() const;
     int getCoins() const;
     bool isSanctioned() const;
     void setSanctioned(bool status);
+    bool isArrested() const;
+    void setArrest(bool status);
 
 protected:
     std::string _name;
     int _coins;
     bool _sanctioned;
-    std::string _lastArrestedby;
+    bool _arrested;
+    bool _can_arrest;
 };
 
 #endif

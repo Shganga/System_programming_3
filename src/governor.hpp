@@ -7,7 +7,7 @@
 class Governor : public Player{
     public:
         void tax() override;
-
+        std::string get_type() const override;
 };
 
 #endif

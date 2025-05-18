@@ -1,11 +1,10 @@
-#ifndef BARON_HPP
-#define BARON_HPP
+#ifndef GENERAL_HPP
+#define GENERAL_HPP
 
 #include "player.hpp"
 
-class Baron : public Player {
+class General : public Player {
 public:
-    void invest();
     std::string get_type() const override;
 };
 
