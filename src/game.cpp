@@ -1,5 +1,5 @@
-#include "game_board.hpp"
-#include "player.hpp"
+#include "game.hpp"
+#include "roles/player.hpp"
 
 GameBoard::GameBoard() : _current_turn(0), _current_round(1) {}
 
