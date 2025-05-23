@@ -6,6 +6,7 @@
 class Judge : public Player {
 public:
     std::string get_type() const override;
+    Judge(const std::string& name) : Player(name) { }
 };
 
 #endif

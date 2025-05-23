@@ -6,6 +6,7 @@
 class Merchant : public Player {
 public:
     std::string get_type() const override;
+    Merchant(const std::string& name) : Player(name) { }
 };
 
 #endif

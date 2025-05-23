@@ -5,6 +5,7 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include "game.hpp"
 
 // Forward declarations
 class Button;
@@ -49,6 +50,7 @@ public:
 // Main GUI class for game setup
 class GameSetupGUI {
 private:
+    Game _game;
     sf::RenderWindow window;
     sf::Font font;
     bool fontLoaded;
@@ -67,6 +69,7 @@ private:
     
     void setupPlayerCountScreen();
     void setupPlayerNamesScreen();
+    void setupGameScreen();
     void handleEvents();
     void handleMouseClick(sf::Vector2i mousePos);
     void update();

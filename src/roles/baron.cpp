@@ -1,4 +1,4 @@
-#include <baron.hpp>
+#include "baron.hpp"
 
 void Baron::invest() {
     _coins +=3;

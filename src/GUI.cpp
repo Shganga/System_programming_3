@@ -1,6 +1,7 @@
 #include "GUI.hpp"
 #include <iostream>
 #include <algorithm>
+#include "roles/player_factory.hpp"
 
 // Button implementation
 Button::Button(float x, float y, float width, float height, const std::string& text, sf::Font& font) {
@@ -144,7 +145,7 @@ GameSetupGUI::GameSetupGUI() : window(sf::VideoMode(900, 700), "Game Setup - Pla
                                currentScreen(PLAYER_COUNT_SELECTION), 
                                selectedPlayerCount(2),
                                fontLoaded(false) {
-    
+    _game = Game();
     fontLoaded = loadFont();
     setupPlayerCountScreen();
 }
@@ -367,6 +368,53 @@ void GameSetupGUI::setupPlayerNamesScreen() {
     buttons.push_back(std::move(startButton));
 }
 
+void GameSetupGUI::setupGameScreen(){
+    buttons.clear();
+    labels.clear();
+    playerInputs.clear();
+
+    // Game title
+    sf::Text title;
+    if (fontLoaded) title.setFont(font);
+    title.setString("COUP GAME");
+    title.setCharacterSize(28);
+    title.setFillColor(sf::Color::Black);
+    title.setStyle(sf::Text::Bold);
+    sf::FloatRect titleBounds = title.getLocalBounds();
+    title.setPosition((900 - titleBounds.width) / 2, 20);
+    labels.push_back(title);
+
+    // Player display (names + coins)
+    float yStart = 80;
+    for (size_t i = 0; i < _game.getPlayers().size(); ++i) {
+        sf::Text playerText;
+        if (fontLoaded) playerText.setFont(font);
+        playerText.setString(_game.getPlayers()[i]->getName() + " - Coins: " + std::to_string(_game.getPlayers()[i]->getCoins()));
+        playerText.setCharacterSize(20);
+        playerText.setFillColor(sf::Color::Black);
+        playerText.setPosition(50, yStart + i * 35);
+        labels.push_back(playerText);
+    }
+
+    // Action buttons (column 1)
+    std::vector<std::string> actions = {
+        "gather", "tax", "bribe", "arrest", "sanction", "coup", "ability"
+    };
+    float actionStartY = 80;
+    for (size_t i = 0; i < actions.size(); ++i) {
+        auto actionBtn = std::make_unique<Button>(600, actionStartY + i * 50, 200, 40, actions[i], font);
+        actionBtn->buttonText.setCharacterSize(18);
+        buttons.push_back(std::move(actionBtn));
+    }
+
+    // End turn button
+    auto endTurnBtn = std::make_unique<Button>(600, actionStartY + actions.size() * 50 + 20, 200, 45, "End Turn", font);
+    endTurnBtn->shape.setFillColor(sf::Color(100, 180, 100));
+    endTurnBtn->buttonText.setCharacterSize(20);
+    endTurnBtn->buttonText.setStyle(sf::Text::Bold);
+    buttons.push_back(std::move(endTurnBtn));
+}
+
 void GameSetupGUI::handleEvents() {
     sf::Event event;
     while (window.pollEvent(event)) {
@@ -433,6 +481,7 @@ void GameSetupGUI::handleMouseClick(sf::Vector2i mousePos) {
         // Check Start Game button
         if (buttons.size() > 1 && buttons[1]->isClicked(mousePos)) {
             startGame();
+            // setupGameScreen();
         }
     }
 }
@@ -500,25 +549,15 @@ void GameSetupGUI::startGame() {
             }
         }
     }
-    
-    // Start the game
-    std::cout << "\n=== GAME STARTING ===" << std::endl;
-    std::cout << "Number of players: " << selectedPlayerCount << std::endl;
-    std::cout << "Players:" << std::endl;
+
     for (size_t i = 0; i < playerNames.size(); ++i) {
-        std::cout << "  " << (i + 1) << ". " << playerNames[i] << std::endl;
+        std::string role = _game.roleGenerator();
+        std::shared_ptr<Player> player_ptr = PlayerFactory::createPlayer(role,playerNames[i]);
+        _game.add_player(player_ptr);
     }
-    std::cout << "==================" << std::endl;
+
     
-    // TODO: Initialize your GameBoard and Player objects here
-    // Example:
-    // gameBoard = std::make_shared<GameBoard>();
-    // for (const auto& name : playerNames) {
-    //     auto player = std::make_shared<Player>(name);
-    //     gameBoard->add_player(player);
-    // }
-    
-    window.close(); // Close setup window after starting game
+    setupGameScreen();
 }
 
 std::vector<std::string> GameSetupGUI::getPlayerNames() const {
