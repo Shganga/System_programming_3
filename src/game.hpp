@@ -19,7 +19,8 @@ public:
     std::vector<std::string> players() const;  
     std::string winner() const;         
     std::string roleGenerator() const;
-
+    int currentPlayer() const;
+    void resetArrest();
     void next_turn();                      
 
     

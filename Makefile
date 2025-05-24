@@ -40,4 +40,9 @@ clean:
 run: $(TARGET)
 	./$(TARGET)
 
+valgrind: $(TARGET)
+	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./game_setup
+
+
+
 .PHONY: all clean run

@@ -2,6 +2,7 @@
 #include <iostream>
 #include <algorithm>
 #include "roles/player_factory.hpp"
+#include <cmath>
 
 // Button implementation
 Button::Button(float x, float y, float width, float height, const std::string& text, sf::Font& font) {
@@ -25,6 +26,29 @@ Button::Button(float x, float y, float width, float height, const std::string& t
     );
     
     isHovered = false;
+}
+
+void Button::updateHover(sf::Vector2i mousePos) {
+    sf::FloatRect bounds = shape.getGlobalBounds();
+    bool wasHovered = isHovered;
+    isHovered = bounds.contains(static_cast<sf::Vector2f>(mousePos));
+    
+    // Change color on hover
+    if (isHovered && !wasHovered) {
+        // Store original color if not already stored
+        if (originalColor == sf::Color::Transparent) {
+            originalColor = shape.getFillColor();
+            // Create a lighter hover color
+            hoverColor = sf::Color(
+                std::min(255, static_cast<int>(originalColor.r) + 40),
+                std::min(255, static_cast<int>(originalColor.g) + 40),
+                std::min(255, static_cast<int>(originalColor.b) + 40)
+            );
+        }
+        shape.setFillColor(hoverColor);
+    } else if (!isHovered && wasHovered) {
+        shape.setFillColor(originalColor);
+    }
 }
 
 void Button::draw(sf::RenderWindow& window) {
@@ -368,52 +392,137 @@ void GameSetupGUI::setupPlayerNamesScreen() {
     buttons.push_back(std::move(startButton));
 }
 
-void GameSetupGUI::setupGameScreen(){
+void GameSetupGUI::setupGameScreen(std::string message) {
     buttons.clear();
     labels.clear();
     playerInputs.clear();
 
-    // Game title
+    // === כותרת המשחק ===
     sf::Text title;
     if (fontLoaded) title.setFont(font);
-    title.setString("COUP GAME");
-    title.setCharacterSize(28);
-    title.setFillColor(sf::Color::Black);
+    title.setString("C O U P");
+    title.setCharacterSize(32);
+    title.setFillColor(sf::Color(220, 20, 60));
     title.setStyle(sf::Text::Bold);
     sf::FloatRect titleBounds = title.getLocalBounds();
-    title.setPosition((900 - titleBounds.width) / 2, 20);
+    title.setPosition((900 - titleBounds.width) / 2, 10);
     labels.push_back(title);
 
-    // Player display (names + coins)
-    float yStart = 80;
-    for (size_t i = 0; i < _game.getPlayers().size(); ++i) {
-        sf::Text playerText;
-        if (fontLoaded) playerText.setFont(font);
-        playerText.setString(_game.getPlayers()[i]->getName() + " - Coins: " + std::to_string(_game.getPlayers()[i]->getCoins()));
-        playerText.setCharacterSize(20);
-        playerText.setFillColor(sf::Color::Black);
-        playerText.setPosition(50, yStart + i * 35);
-        labels.push_back(playerText);
-    }
+    // === כפתורי הפעולות העליונים ===
+    float buttonStartX = 50;
+    float buttonY = 60;
+    float buttonWidth = 100;
+    float buttonHeight = 35;
+    float buttonSpacing = 110;
 
-    // Action buttons (column 1)
-    std::vector<std::string> actions = {
-        "gather", "tax", "bribe", "arrest", "sanction", "coup", "ability"
+    struct ActionInfo {
+        std::string name;
+        std::string displayName;
+        sf::Color color;
     };
-    float actionStartY = 80;
+
+    std::vector<ActionInfo> actions = {
+        {"gather", "GATHER", sf::Color(0, 160, 0)},
+        {"tax", "TAX", sf::Color(0, 160, 0)},
+        {"bribe", "BRIBE", sf::Color(0, 160, 0)},
+        {"arrest", "ARREST", sf::Color(0, 160, 0)},
+        {"sanction", "SANCTION", sf::Color(0, 160, 0)},
+        {"coup", "COUP", sf::Color(0, 160, 0)},
+        {"ability", "SPECIAL", sf::Color(0, 160, 0)}
+    };
+
     for (size_t i = 0; i < actions.size(); ++i) {
-        auto actionBtn = std::make_unique<Button>(600, actionStartY + i * 50, 200, 40, actions[i], font);
-        actionBtn->buttonText.setCharacterSize(18);
+        auto actionBtn = std::make_unique<Button>(
+            buttonStartX + i * buttonSpacing, buttonY, buttonWidth, buttonHeight,
+            actions[i].displayName, font
+        );
+        actionBtn->shape.setFillColor(actions[i].color);
         buttons.push_back(std::move(actionBtn));
     }
 
-    // End turn button
-    auto endTurnBtn = std::make_unique<Button>(600, actionStartY + actions.size() * 50 + 20, 200, 45, "End Turn", font);
-    endTurnBtn->shape.setFillColor(sf::Color(100, 180, 100));
-    endTurnBtn->buttonText.setCharacterSize(20);
-    endTurnBtn->buttonText.setStyle(sf::Text::Bold);
-    buttons.push_back(std::move(endTurnBtn));
+    // === מיקום השחקנים סביב שולחן ===
+    // נניח שהחלון 900x600
+    // נגדיר נקודות ישיבה סביב שולחן מלבני:
+    // למעלה: שני מקומות, למטה שני מקומות, שמאל וימין (עד 6 שחקנים)
+
+    std::vector<sf::Vector2f> seats = {
+        {350, 150}, // Top left seat
+        {550, 150}, // Top right seat
+        {650, 300}, // Right middle seat
+        {550, 450},  // Bottom right seat
+        {350, 450}, // Bottom left seat
+        {250, 300} // Left middle seat 
+    };
+
+    size_t numPlayers = _game.getPlayers().size();
+
+    for (size_t i = 0; i < numPlayers && i < seats.size(); ++i) {
+        sf::Vector2f pos = seats[i];
+        bool isCurrentPlayer = (i == static_cast<size_t>(_game.currentPlayer()));
+
+
+        sf::Text playerName;
+        if (fontLoaded) playerName.setFont(font);
+        playerName.setString(_game.getPlayers()[i]->getName());
+        playerName.setCharacterSize(18);
+        playerName.setFillColor(isCurrentPlayer ? sf::Color::Green : sf::Color::Red);
+        playerName.setStyle(sf::Text::Bold);
+        sf::FloatRect nameBounds = playerName.getLocalBounds();
+        playerName.setPosition(pos.x - nameBounds.width / 2, pos.y - 20);
+
+        sf::Text roleText;
+        if (fontLoaded) roleText.setFont(font);
+        roleText.setString(_game.getPlayers()[i]->get_type());
+        roleText.setCharacterSize(14);
+        roleText.setFillColor(sf::Color(200, 200, 200));
+        sf::FloatRect roleBounds = roleText.getLocalBounds();
+        roleText.setPosition(pos.x - roleBounds.width / 2, pos.y);
+
+        sf::Text coinText;
+        if (fontLoaded) coinText.setFont(font);
+        coinText.setString("♦ " + std::to_string(_game.getPlayers()[i]->getCoins()));
+        coinText.setCharacterSize(16);
+        coinText.setFillColor(sf::Color::Black);
+        coinText.setStyle(sf::Text::Bold);
+        sf::FloatRect coinBounds = coinText.getLocalBounds();
+        coinText.setPosition(pos.x - coinBounds.width / 2, pos.y + 20);
+
+
+        // הוסף טקסטים לרשימת התוויות לציור
+        labels.push_back(playerName);
+        labels.push_back(roleText);
+        labels.push_back(coinText);
+
+    }
+
+    sf::Text statusText;
+    if (fontLoaded) statusText.setFont(font);
+    statusText.setString(message);
+    statusText.setCharacterSize(16);
+    statusText.setFillColor(sf::Color::Blue);
+    statusText.setStyle(sf::Text::Italic);
+    statusText.setPosition(50, 550); // קרוב לתחתית המסך
+    labels.push_back(statusText);
+
+    // === מידע משחק בפינה ימנית עליונה ===
+    sf::Text gameInfo;
+    if (fontLoaded) gameInfo.setFont(font);
+    gameInfo.setString("Turn: " + _game.turn());
+    gameInfo.setCharacterSize(18);
+    gameInfo.setFillColor(sf::Color(50, 50, 50));
+    gameInfo.setStyle(sf::Text::Bold);
+    gameInfo.setPosition(700, 120);
+    labels.push_back(gameInfo);
+
+    sf::Text playerCount;
+    if (fontLoaded) playerCount.setFont(font);
+    playerCount.setString("Players: " + std::to_string(numPlayers));
+    playerCount.setCharacterSize(16);
+    playerCount.setFillColor(sf::Color(100, 100, 100));
+    playerCount.setPosition(700, 145);
+    labels.push_back(playerCount);
 }
+
 
 void GameSetupGUI::handleEvents() {
     sf::Event event;
@@ -480,10 +589,75 @@ void GameSetupGUI::handleMouseClick(sf::Vector2i mousePos) {
         
         // Check Start Game button
         if (buttons.size() > 1 && buttons[1]->isClicked(mousePos)) {
+            currentScreen = GAME_SCREEN;
             startGame();
-            // setupGameScreen();
         }
     }
+    else if (currentScreen == GAME_SCREEN) {
+    // Loop through all action buttons
+        for (size_t i = 0; i < buttons.size(); ++i) {
+            if (buttons[i]->isClicked(mousePos)) {
+                handleGameAction(i);
+                break;
+            }
+        }
+    }
+}
+
+void GameSetupGUI::handleGameAction(size_t buttonIndex) {
+    // Assuming order matches your actions vector from setupGameScreen()
+    int turn = _game.currentPlayer();
+    bool action;
+    std::string message;
+    switch (buttonIndex) {
+        case 0:  // Gather
+            action = _game.getPlayers()[turn]->gather();
+            if(!action){
+                message = "you cant use gather";
+                break;
+            }
+            message = "Gather action triggered\n";
+            _game.next_turn();
+            break;
+        case 1:  // Tax
+            action = _game.getPlayers()[turn]->tax();
+            if(!action){
+                message = "you cant use tax\n";
+                break;
+            }
+            message = "Tax action triggered\n";
+            break;
+        case 2:  // Bribe
+            action = _game.getPlayers()[turn]->bribe();
+            if(!action){
+                message = "you cant use bribe";
+                break;
+            }
+            std::cout << "Bribe action triggered\n";
+            break;
+        case 3:  // Arrest
+            //_game.getPlayers()[turn]->arrest();
+            std::cout << "Arrest action triggered\n";
+            break;
+        case 4:  // Sanction
+            //_game.getPlayers()[turn]->sanction();
+            std::cout << "Sanction action triggered\n";
+            break;
+        case 5:  // Coup
+            //_game.getPlayers()[turn]->coup();
+            std::cout << "Coup action triggered\n";
+            break;
+        case 6:  // Special / Ability
+            //_game.getPlayers()[turn]->ability();
+            std::cout << "Special ability triggered\n";
+            break;
+        default:
+            std::cout << "Unknown action\n";
+            break;
+    }
+
+    // After action, maybe update the screen or game state
+    setupGameScreen(message);
 }
 
 void GameSetupGUI::update() {
@@ -557,7 +731,7 @@ void GameSetupGUI::startGame() {
     }
 
     
-    setupGameScreen();
+    setupGameScreen("Game started");
 }
 
 std::vector<std::string> GameSetupGUI::getPlayerNames() const {

@@ -1,10 +1,11 @@
 #include "governor.hpp"
 
-void Governor::tax() {
+bool Governor::tax() {
     if (_sanctioned) {
-        throw std::runtime_error("Player " + _name + " is sanctioned and cannot tax.");
+        return false;
     }
     _coins += 3;
+    return true;
 }
 std::string Governor::get_type() const{
     return "Governor";

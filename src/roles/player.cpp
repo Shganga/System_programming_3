@@ -20,25 +20,28 @@ Player& Player::operator=(const Player& other) {
     return *this;
 }
 
-void Player::gather() {
+bool Player::gather() {
     if (_sanctioned) {
-        throw std::runtime_error("Player " + _name + " is sanctioned and cannot gather.");
+        return false;
     }
     _coins += 1;
+    return true;
 }
 
-void Player::tax() {
+bool Player::tax() {
     if (_sanctioned) {
-        throw std::runtime_error("Player " + _name + " is sanctioned and cannot tax.");
+        return false;
     }
     _coins += 2;
+    return true;
 }
 
-void Player::bribe() {
+bool Player::bribe() {
     if (_coins < 4) {
-        throw std::runtime_error("Player " + _name + " does not have enough coins to bribe (needs 4).");
+        return false;
     }
     _coins -= 4;
+    return true;
     // Allow extra action (external handling if needed)
 }
 

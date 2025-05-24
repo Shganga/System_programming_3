@@ -16,6 +16,25 @@ std::string Game::turn() const {
     return _players_list[_current_turn % _players_list.size()]->getName();
 }
 
+void Game::next_turn(){
+    _current_turn++;
+    if(_current_turn % _players_list.size() == 0){
+        _current_round++;
+        resetArrest();
+    }
+}
+
+void Game::resetArrest(){
+    for (size_t i = 0; i < _players_list.size(); i++)
+    {
+        _players_list[i]->setArrest(false);
+    }
+}
+
+int Game::currentPlayer() const{
+    return _current_turn % _players_list.size();
+}
+
 std::vector<std::string> Game::players() const {
     std::vector<std::string> active_players;
     for (const auto& p : _players_list) {

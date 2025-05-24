@@ -12,9 +12,9 @@ public:
     Player(const Player& other);
     Player& operator=(const Player& other);
 
-    void gather();
-    virtual void tax();
-    void bribe();
+    bool gather();
+    virtual bool tax();
+    bool bribe();
     void arrest(Player& target);
     void sanction(Player& target);
     void coup(Player& target);
