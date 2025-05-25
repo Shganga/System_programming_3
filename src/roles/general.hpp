@@ -6,6 +6,7 @@
 class General : public Player {
 public:
     std::string get_type() const override;
+    General(const std::string& name) : Player(name) { }
 };
 
 #endif

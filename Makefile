@@ -4,24 +4,31 @@ SFML_LIBS = -lsfml-graphics -lsfml-window -lsfml-system
 
 SRC_DIR = src
 BUILD_DIR = build
+ROLES_DIR = roles
 
-SOURCES = $(SRC_DIR)/main.cpp $(SRC_DIR)/GUI.cpp
-OBJECTS = $(BUILD_DIR)/main.o $(BUILD_DIR)/GUI.o
+# All .cpp files directly in src
+SRC_FILES := $(wildcard $(SRC_DIR)/*.cpp)
+
+# All .cpp files recursively inside src/roles
+ROLE_SRC_FILES := $(shell find $(SRC_DIR)/$(ROLES_DIR) -name '*.cpp')
+
+# Combine all source files
+SOURCES := $(SRC_FILES) $(ROLE_SRC_FILES)
+
+# Convert all source files to object files in build/ preserving directory structure
+OBJECTS := $(patsubst $(SRC_DIR)/%.cpp,$(BUILD_DIR)/%.o,$(SOURCES))
 
 TARGET = game_setup
 
 all: $(TARGET)
 
-# Create build dir if missing
+# Create build directory and subdirs as needed
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
-# Compile main.o, depends on build dir
-$(BUILD_DIR)/main.o: $(SRC_DIR)/main.cpp | $(BUILD_DIR)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-# Compile GUI.o, depends on build dir
-$(BUILD_DIR)/GUI.o: $(SRC_DIR)/GUI.cpp | $(BUILD_DIR)
+# Compile each .cpp to corresponding .o in build/, creating subdirs if needed
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp | $(BUILD_DIR)
+	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 $(TARGET): $(OBJECTS)
@@ -32,5 +39,10 @@ clean:
 
 run: $(TARGET)
 	./$(TARGET)
+
+valgrind: $(TARGET)
+	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./game_setup
+
+
 
 .PHONY: all clean run

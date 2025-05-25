@@ -5,6 +5,7 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include "game.hpp"
 
 // Forward declarations
 class Button;
@@ -16,6 +17,12 @@ public:
     sf::RectangleShape shape;
     sf::Text buttonText;
     bool isHovered;
+    sf::Color originalColor = sf::Color::Transparent;
+    sf::Color hoverColor = sf::Color::Transparent;
+
+
+    
+    void updateHover(sf::Vector2i mousePos);
     
     Button(float x, float y, float width, float height, const std::string& text, sf::Font& font);
     void draw(sf::RenderWindow& window);
@@ -49,13 +56,17 @@ public:
 // Main GUI class for game setup
 class GameSetupGUI {
 private:
+    Game _game;
     sf::RenderWindow window;
     sf::Font font;
     bool fontLoaded;
+    std::vector<sf::RectangleShape> playerBoxes;
+    
     
     enum Screen {
         PLAYER_COUNT_SELECTION,
-        PLAYER_NAMES_INPUT
+        PLAYER_NAMES_INPUT,
+        GAME_SCREEN
     };
     
     Screen currentScreen;
@@ -67,12 +78,14 @@ private:
     
     void setupPlayerCountScreen();
     void setupPlayerNamesScreen();
+    void setupGameScreen(std::string message);
     void handleEvents();
     void handleMouseClick(sf::Vector2i mousePos);
     void update();
     void render();
     void startGame();
     bool loadFont();
+    void handleGameAction(size_t buttonIndex);
     
 public:
     GameSetupGUI();

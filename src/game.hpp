@@ -6,18 +6,21 @@
 #include <memory>
 #include <stdexcept>
 #include <unordered_map>
-#include "player.hpp"
+#include "roles/player.hpp"
 
-class GameBoard {
+class Game {
 public:
-    GameBoard();
+    Game();
 
     void add_player(std::shared_ptr<Player> player);
 
-    std::string turn() const;               
+    std::string turn() const;       
+    std::vector<std::shared_ptr<Player>> getPlayers();       
     std::vector<std::string> players() const;  
-    std::string winner() const;           
-
+    std::string winner() const;         
+    std::string roleGenerator() const;
+    int currentPlayer() const;
+    void resetArrest();
     void next_turn();                      
 
     
