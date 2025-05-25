@@ -625,6 +625,7 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
                 message = "you cant use tax\n";
                 break;
             }
+            _game.next_turn();
             message = "Tax action triggered\n";
             break;
         case 2:  // Bribe
@@ -633,6 +634,7 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
                 message = "you cant use bribe";
                 break;
             }
+            _game.bribe();
             std::cout << "Bribe action triggered\n";
             break;
         case 3:  // Arrest

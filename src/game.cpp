@@ -17,11 +17,20 @@ std::string Game::turn() const {
 }
 
 void Game::next_turn(){
-    _current_turn++;
-    if(_current_turn % _players_list.size() == 0){
-        _current_round++;
-        resetArrest();
+    if(!isbribe){
+        _current_turn++;
+        if(_current_turn % _players_list.size() == 0){
+            _current_round++;
+            resetArrest();
+        }
     }
+    else{
+        isbribe = false;
+    }
+}
+
+void Game::bribe(){
+    isbribe = true;
 }
 
 void Game::resetArrest(){

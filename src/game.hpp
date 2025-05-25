@@ -21,7 +21,8 @@ public:
     std::string roleGenerator() const;
     int currentPlayer() const;
     void resetArrest();
-    void next_turn();                      
+    void next_turn(); 
+    void bribe();                     
 
     
 
@@ -30,6 +31,7 @@ private:
     std::vector<std::shared_ptr<Player>> _out_list;
     size_t _current_turn;     
     size_t _current_round;
+    bool isbribe;
 };
 
 #endif
