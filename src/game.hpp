@@ -22,7 +22,7 @@ public:
     int currentPlayer() const;
     void resetArrest();
     void next_turn(); 
-    void bribe();                     
+    void bribe();    
 
     
 

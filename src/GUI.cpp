@@ -3,6 +3,8 @@
 #include <algorithm>
 #include "roles/player_factory.hpp"
 #include <cmath>
+#include "roles/baron.hpp"
+#include "roles/spy.hpp"
 
 // Button implementation
 Button::Button(float x, float y, float width, float height, const std::string& text, sf::Font& font) {
@@ -617,6 +619,9 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
                 break;
             }
             message = "Gather action triggered\n";
+            if(_game.getPlayers()[turn]->isSanctioned()){
+                _game.getPlayers()[turn]->setSanctioned(false);
+            }
             _game.next_turn();
             break;
         case 1:  // Tax
@@ -624,6 +629,9 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
             if(!action){
                 message = "you cant use tax\n";
                 break;
+            }
+            if(_game.getPlayers()[turn]->isSanctioned()){
+                _game.getPlayers()[turn]->setSanctioned(false);
             }
             _game.next_turn();
             message = "Tax action triggered\n";
@@ -634,33 +642,151 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
                 message = "you cant use bribe";
                 break;
             }
+            if(_game.getPlayers()[turn]->isSanctioned()){
+                _game.getPlayers()[turn]->setSanctioned(false);
+            }
             _game.bribe();
             std::cout << "Bribe action triggered\n";
             break;
-        case 3:  // Arrest
-            //_game.getPlayers()[turn]->arrest();
-            std::cout << "Arrest action triggered\n";
+        case 3:{//arrest  
+            std::shared_ptr<Player> selected = displayPlayerSelection("Choose Arrest");
+            if (selected) {
+                std::cout << "Selected player: " << selected->getName() << std::endl;
+                action = _game.getPlayers()[turn]->arrest(*selected);
+                if(!action){
+                    message = "you cant use arrest in general or on this player";
+                    break;
+                }
+                if(_game.getPlayers()[turn]->isSanctioned()){
+                    _game.getPlayers()[turn]->setSanctioned(false);
+                }
+                message = "Arrest was triggerd on " + selected->getName();
+                _game.next_turn();
+                break;
+            }
+            message = "You didnt select a player";
             break;
-        case 4:  // Sanction
-            //_game.getPlayers()[turn]->sanction();
-            std::cout << "Sanction action triggered\n";
+        }
+        case 4:{  // Sanction
+            std::shared_ptr<Player> selected = displayPlayerSelection("Choose Sunction");
+            if (selected) {
+                std::cout << "Selected player: " << selected->getName() << std::endl;
+                action = _game.getPlayers()[turn]->sanction(*selected);
+                if(!action){
+                    message = "you cant use sanction in general or on this player";
+                    break;
+                }
+                if(_game.getPlayers()[turn]->isSanctioned()){
+                    _game.getPlayers()[turn]->setSanctioned(false);
+                }
+                message = "sanction was triggerd on " + selected->getName();
+                _game.next_turn();
+                break;
+            }
+            message = "You didnt select a player";
             break;
+        }
         case 5:  // Coup
             //_game.getPlayers()[turn]->coup();
             std::cout << "Coup action triggered\n";
             break;
-        case 6:  // Special / Ability
-            //_game.getPlayers()[turn]->ability();
-            std::cout << "Special ability triggered\n";
-            break;
+        case 6:{  // Special / Ability
+            if(_game.getPlayers()[turn]->get_type() == "Baron"){
+                auto& player = _game.getPlayers()[turn];
+                Baron* baron = dynamic_cast<Baron*>(player.get());
+                action = baron->ability();
+                if(!action){
+                    message = "ability didnt work";
+                    break;
+                }
+                message = "You used barons ability";
+                if(_game.getPlayers()[turn]->isSanctioned()){
+                    _game.getPlayers()[turn]->setSanctioned(false);
+                }
+                _game.next_turn();
+                break;
+            }
+            else if(_game.getPlayers()[turn]->get_type() == "Spy"){
+                auto& player = _game.getPlayers()[turn];
+                Spy* spy = dynamic_cast<Spy*>(player.get());
+                std::shared_ptr<Player> selected = displayPlayerSelection("Choose for spy ability");
+                int coins = spy->ability(*selected);
+                if(coins != selected->getCoins()){
+                    message = "ability didnt work";
+                    break;
+                }
+                message = "The player " + selected->getName() + " has " + std::to_string(coins) + " coins";
+                if(_game.getPlayers()[turn]->isSanctioned()){
+                    _game.getPlayers()[turn]->setSanctioned(false);
+                }
+                _game.next_turn();
+                break;
+            }
+            else{
+                message = "your roles doesnt have an ability";
+                break;
+            }
+        }
         default:
             std::cout << "Unknown action\n";
             break;
     }
-
+    
     // After action, maybe update the screen or game state
     setupGameScreen(message);
 }
+
+std::shared_ptr<Player> GameSetupGUI::displayPlayerSelection(const std::string& title) {
+    std::vector<std::unique_ptr<Button>> playerButtons;
+    const auto& players = _game.getPlayers(); // assumes std::vector<Player>
+
+    sf::Text titleText;
+    titleText.setFont(font);
+    titleText.setString(title);
+    titleText.setCharacterSize(30);
+    titleText.setFillColor(sf::Color::White);
+    titleText.setPosition(100, 50);
+
+    float startY = 150;
+    for (size_t i = 0; i < players.size(); ++i) {
+        float y = startY + i * 60;
+        playerButtons.push_back(std::make_unique<Button>(
+            100, y, 300, 50, players[i]->getName(), font
+        ));
+    }
+
+    while (window.isOpen()) {
+        sf::Event event;
+        while (window.pollEvent(event)) {
+            if (event.type == sf::Event::Closed) {
+                window.close();
+                return nullptr;
+            }
+            else if (event.type == sf::Event::MouseButtonPressed) {
+                sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+                for (size_t i = 0; i < playerButtons.size(); ++i) {
+                    if (playerButtons[i]->isClicked(mousePos)) {
+                        std::shared_ptr<Player> selected = _game.getPlayers()[i];
+                        return players[i]; // return selected player's index
+                    }
+                }
+            }
+        }
+
+        sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+        for (auto& btn : playerButtons)
+            btn->update(mousePos);
+
+        window.clear(sf::Color::Black);
+        window.draw(titleText);
+        for (auto& btn : playerButtons)
+            btn->draw(window);
+        window.display();
+    }
+
+    return nullptr; // fallback if window is closed
+}
+
 
 void GameSetupGUI::update() {
     sf::Vector2i mousePos = sf::Mouse::getPosition(window);

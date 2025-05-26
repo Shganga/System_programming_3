@@ -86,6 +86,8 @@ private:
     void startGame();
     bool loadFont();
     void handleGameAction(size_t buttonIndex);
+    std::shared_ptr<Player> displayPlayerSelection(const std::string& title);
+
     
 public:
     GameSetupGUI();

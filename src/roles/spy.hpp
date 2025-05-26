@@ -6,7 +6,7 @@
 class Spy : public Player{
     public:
         Spy(const std::string& name) : Player(name) { }
-        int LookAndBlock(Player& player);
+        int ability(Player& player);
         std::string get_type() const override;
 };
 #endif
