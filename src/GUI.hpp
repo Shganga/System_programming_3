@@ -62,6 +62,7 @@ private:
     bool fontLoaded;
     std::vector<sf::RectangleShape> playerBoxes;
     TextInput* activeInput = nullptr;
+    sf::Text errorText;
 
     
     enum Screen {

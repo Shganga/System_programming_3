@@ -387,8 +387,6 @@ void GameSetupGUI::setupPlayerNamesScreen() {
     startButton->buttonText.setStyle(sf::Text::Bold);
     buttons.push_back(std::move(startButton));
     
-    // Error text (initially empty)
-    sf::Text errorText;
     if (fontLoaded) {
         errorText.setFont(font);
     }
@@ -539,21 +537,22 @@ void GameSetupGUI::handleEvents() {
         if (event.type == sf::Event::Closed) {
             window.close();
         }
-
+        
         if (event.type == sf::Event::MouseButtonPressed) {
             sf::Vector2i mousePos = sf::Mouse::getPosition(window);
             handleMouseClick(mousePos);
         }
-
+        
         if (event.type == sf::Event::TextEntered) {
-            if (currentScreen == PLAYER_NAMES_INPUT && activeInput != nullptr) {
+            if (currentScreen == PLAYER_NAMES_INPUT) {
                 char inputChar = static_cast<char>(event.text.unicode);
-                activeInput->handleTextInput(inputChar);
+                for (auto& input : playerInputs) {
+                    input->handleTextInput(inputChar);
+                }
             }
         }
     }
 }
-
 
 void GameSetupGUI::handleMouseClick(sf::Vector2i mousePos) {
     if (currentScreen == PLAYER_COUNT_SELECTION) {
@@ -994,39 +993,47 @@ void GameSetupGUI::render() {
 }
 
 void GameSetupGUI::startGame() {
-    // Collect player names
     std::vector<std::string> playerNames;
-    bool allNamesValid = true;
-    
+
+    // Clear previous error message
+    errorText.setString("");
+
+    // Check for empty names
     for (const auto& input : playerInputs) {
         std::string name = input->getText();
         if (name.empty()) {
-            allNamesValid = false;
+            errorText.setString("Please enter names for all players!");
             std::cout << "Error: Please enter names for all players!" << std::endl;
-            return;
+            currentScreen = PLAYER_NAMES_INPUT;  // stay on the input screen
+            return;  // exit so user can fix input
         }
         playerNames.push_back(name);
     }
-    
-    // Check for duplicate names
+
+    // Check for duplicates
     for (size_t i = 0; i < playerNames.size(); ++i) {
         for (size_t j = i + 1; j < playerNames.size(); ++j) {
             if (playerNames[i] == playerNames[j]) {
+                errorText.setString("Player names must be unique! Duplicate: " + playerNames[i]);
                 std::cout << "Error: Player names must be unique! Found duplicate: " << playerNames[i] << std::endl;
-                return;
+                currentScreen = PLAYER_NAMES_INPUT;  // stay on input screen
+                return;  // exit so user can fix input
             }
         }
     }
 
-    for (size_t i = 0; i < playerNames.size(); ++i) {
+    // If all good, add players and move to game screen
+    for (const auto& name : playerNames) {
         std::string role = _game.roleGenerator();
-        std::shared_ptr<Player> player_ptr = PlayerFactory::createPlayer(role,playerNames[i]);
+        std::shared_ptr<Player> player_ptr = PlayerFactory::createPlayer(role, name);
         _game.add_player(player_ptr);
     }
 
-    
+    // Clear error message on success
+    errorText.setString("");
     setupGameScreen("Game started");
 }
+
 
 std::vector<std::string> GameSetupGUI::getPlayerNames() const {
     std::vector<std::string> names;
