@@ -177,14 +177,9 @@ GameSetupGUI::GameSetupGUI() : window(sf::VideoMode(900, 700), "Game Setup - Pla
 }
 
 bool GameSetupGUI::loadFont() {
-    // Ubuntu-specific font paths
-    std::vector<std::string> fontPaths = {
-        // Try local fonts first
-        "arial.ttf",
-        "assets/fonts/arial.ttf",
-        "fonts/arial.ttf",
-        
-        // Ubuntu system fonts
+    // רשימת נתיבים פונט אופציונליים לפי סדר ניסיון
+    static const std::vector<std::string> fontPaths = {
+        // Ubuntu system fonts (מומלץ להשתמש באלו קודם)
         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
         "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
@@ -193,24 +188,28 @@ bool GameSetupGUI::loadFont() {
         "/usr/share/fonts/truetype/ubuntu/Ubuntu-B.ttf",
         "/usr/share/fonts/TTF/DejaVuSans.ttf",
         "/usr/share/fonts/TTF/LiberationSans-Regular.ttf",
-        
+
         // Fallback fonts
         "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",
         "/usr/share/fonts/opentype/noto/NotoSans-Regular.ttf",
         "/system/fonts/DroidSans.ttf"
     };
-    
-    for (const auto& fontPath : fontPaths) {
-        if (font.loadFromFile(fontPath)) {
-            std::cout << "Font loaded successfully from: " << fontPath << std::endl;
+
+    for (const auto& path : fontPaths) {
+        if (font.loadFromFile(path)) {
+            std::cout << "Font loaded successfully from: " << path << std::endl;
             return true;
+        } else {
+            // אופציונלי: להדפיס אם תרצה לדעת מה לא נטען
+            // std::cerr << "Failed to load font from: " << path << std::endl;
         }
     }
-    
-    std::cout << "Warning: Could not load any font. Text might not display correctly." << std::endl;
-    std::cout << "To fix this, install fonts with: sudo apt install fonts-dejavu-core fonts-liberation" << std::endl;
+
+    std::cerr << "Warning: Could not load any font. Text might not display correctly." << std::endl;
+    std::cerr << "To fix this, install fonts with: sudo apt install fonts-dejavu-core fonts-liberation" << std::endl;
     return false;
 }
+
 
 void GameSetupGUI::run() {
     std::cout << "Starting Game Setup GUI..." << std::endl;
@@ -356,12 +355,11 @@ void GameSetupGUI::setupPlayerNamesScreen() {
     subtitle.setPosition((900 - subtitleBounds.width) / 2, 85);
     labels.push_back(subtitle);
     
-    // Create input fields for each player
+    // Input fields
     float startY = 140;
     for (int i = 0; i < selectedPlayerCount; ++i) {
         float y = startY + i * 60;
         
-        // Player label
         sf::Text playerLabel;
         if (fontLoaded) {
             playerLabel.setFont(font);
@@ -373,26 +371,34 @@ void GameSetupGUI::setupPlayerNamesScreen() {
         playerLabel.setPosition(250, y + 10);
         labels.push_back(playerLabel);
         
-        // Input field - make it wider
         playerInputs.push_back(std::make_unique<TextInput>(380, y, 250, 40, font));
     }
     
-    // Calculate button Y position based on number of players
     float buttonY = startY + selectedPlayerCount * 60 + 40;
     
-    // Back button
     auto backButton = std::make_unique<Button>(250, buttonY, 120, 50, "BACK", font);
-    backButton->shape.setFillColor(sf::Color(150, 150, 150)); // Gray
+    backButton->shape.setFillColor(sf::Color(150, 150, 150));
     backButton->buttonText.setCharacterSize(20);
     buttons.push_back(std::move(backButton));
     
-    // Start Game button
     auto startButton = std::make_unique<Button>(430, buttonY, 200, 50, "START GAME", font);
-    startButton->shape.setFillColor(sf::Color(220, 60, 60)); // Red
+    startButton->shape.setFillColor(sf::Color(220, 60, 60));
     startButton->buttonText.setCharacterSize(20);
     startButton->buttonText.setStyle(sf::Text::Bold);
     buttons.push_back(std::move(startButton));
+    
+    // Error text (initially empty)
+    sf::Text errorText;
+    if (fontLoaded) {
+        errorText.setFont(font);
+    }
+    errorText.setCharacterSize(18);
+    errorText.setFillColor(sf::Color::Red);
+    errorText.setString("");
+    errorText.setPosition(250, buttonY + 60);
+    labels.push_back(errorText);
 }
+
 
 void GameSetupGUI::setupGameScreen(std::string message) {
     buttons.clear();
@@ -482,7 +488,8 @@ void GameSetupGUI::setupGameScreen(std::string message) {
 
         sf::Text coinText;
         if (fontLoaded) coinText.setFont(font);
-        coinText.setString("♦ " + std::to_string(_game.getPlayers()[i]->getCoins()));
+        std::string coinDisplay = isCurrentPlayer ? std::to_string(_game.getPlayers()[i]->getCoins()) : "???";
+        coinText.setString("coins: " + coinDisplay);
         coinText.setCharacterSize(16);
         coinText.setFillColor(sf::Color::Black);
         coinText.setStyle(sf::Text::Bold);
@@ -532,22 +539,21 @@ void GameSetupGUI::handleEvents() {
         if (event.type == sf::Event::Closed) {
             window.close();
         }
-        
+
         if (event.type == sf::Event::MouseButtonPressed) {
             sf::Vector2i mousePos = sf::Mouse::getPosition(window);
             handleMouseClick(mousePos);
         }
-        
+
         if (event.type == sf::Event::TextEntered) {
-            if (currentScreen == PLAYER_NAMES_INPUT) {
+            if (currentScreen == PLAYER_NAMES_INPUT && activeInput != nullptr) {
                 char inputChar = static_cast<char>(event.text.unicode);
-                for (auto& input : playerInputs) {
-                    input->handleTextInput(inputChar);
-                }
+                activeInput->handleTextInput(inputChar);
             }
         }
     }
 }
+
 
 void GameSetupGUI::handleMouseClick(sf::Vector2i mousePos) {
     if (currentScreen == PLAYER_COUNT_SELECTION) {
@@ -610,6 +616,7 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
     // Assuming order matches your actions vector from setupGameScreen()
     int turn = _game.currentPlayer();
     bool action;
+    bool block = false;
     std::string message;
     switch (buttonIndex) {
         case 0:  // Gather
@@ -622,9 +629,18 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
             if(_game.getPlayers()[turn]->isSanctioned()){
                 _game.getPlayers()[turn]->setSanctioned(false);
             }
+            if(!_game.getPlayers()[_game.currentPlayer()]->getCanArrest()){
+                _game.getPlayers()[_game.currentPlayer()]->setCanArrest(true);
+            }
             _game.next_turn();
             break;
         case 1:  // Tax
+            block = askAllWithRole("Governor");
+            if(block){
+                message = "A Governor blocked your tax\n";
+                _game.next_turn();
+                break;
+            }
             action = _game.getPlayers()[turn]->tax();
             if(!action){
                 message = "you cant use tax\n";
@@ -632,6 +648,9 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
             }
             if(_game.getPlayers()[turn]->isSanctioned()){
                 _game.getPlayers()[turn]->setSanctioned(false);
+            }
+            if(!_game.getPlayers()[_game.currentPlayer()]->getCanArrest()){
+                _game.getPlayers()[_game.currentPlayer()]->setCanArrest(true);
             }
             _game.next_turn();
             message = "Tax action triggered\n";
@@ -642,8 +661,17 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
                 message = "you cant use bribe";
                 break;
             }
+            block = askAllWithRole("Judge");
+            if(block){
+                message = "A Judge blocked your bribe\n";
+                _game.next_turn();
+                break;
+            }
             if(_game.getPlayers()[turn]->isSanctioned()){
                 _game.getPlayers()[turn]->setSanctioned(false);
+            }
+            if(!_game.getPlayers()[_game.currentPlayer()]->getCanArrest()){
+                _game.getPlayers()[_game.currentPlayer()]->setCanArrest(true);
             }
             _game.bribe();
             std::cout << "Bribe action triggered\n";
@@ -680,16 +708,35 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
                     _game.getPlayers()[turn]->setSanctioned(false);
                 }
                 message = "sanction was triggerd on " + selected->getName();
+                if(!_game.getPlayers()[_game.currentPlayer()]->getCanArrest()){
+                    _game.getPlayers()[_game.currentPlayer()]->setCanArrest(true);
+                }
                 _game.next_turn();
                 break;
             }
             message = "You didnt select a player";
             break;
         }
-        case 5:  // Coup
-            //_game.getPlayers()[turn]->coup();
+        case 5:{  // Coup
+            std::shared_ptr<Player> selected = displayPlayerSelection("Choose Coup");
+            bool action = _game.getPlayers()[turn]->coup(*selected);
+            if (!action){
+                message = "7 coins needed";
+            }
+            block = askAllWithRole("General");
+            if(block){
+                message = "A General blocked your Coup\n";
+                _game.next_turn();
+                break;
+            }
+            _game.gameCoup(selected->getName());
+            if(!_game.getPlayers()[_game.currentPlayer()]->getCanArrest()){
+                _game.getPlayers()[_game.currentPlayer()]->setCanArrest(true);
+            }
+            _game.next_turn();
             std::cout << "Coup action triggered\n";
             break;
+        }
         case 6:{  // Special / Ability
             if(_game.getPlayers()[turn]->get_type() == "Baron"){
                 auto& player = _game.getPlayers()[turn];
@@ -702,6 +749,9 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
                 message = "You used barons ability";
                 if(_game.getPlayers()[turn]->isSanctioned()){
                     _game.getPlayers()[turn]->setSanctioned(false);
+                }
+                if(!_game.getPlayers()[_game.currentPlayer()]->getCanArrest()){
+                _game.getPlayers()[_game.currentPlayer()]->setCanArrest(true);
                 }
                 _game.next_turn();
                 break;
@@ -719,7 +769,9 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
                 if(_game.getPlayers()[turn]->isSanctioned()){
                     _game.getPlayers()[turn]->setSanctioned(false);
                 }
-                _game.next_turn();
+                if(!_game.getPlayers()[_game.currentPlayer()]->getCanArrest()){
+                    _game.getPlayers()[_game.currentPlayer()]->setCanArrest(true);
+                }
                 break;
             }
             else{
@@ -732,13 +784,127 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
             break;
     }
     
-    // After action, maybe update the screen or game state
+
+    if(_game.getPlayers().size() == 1){
+        currentScreen = GAME_END;
+        showGameEndScreen();
+    }
+    if(_game.getPlayers()[_game.currentPlayer()]->get_type() == "Merchant" && _game.getPlayers()[_game.currentPlayer()]->getCoins() > 2){
+        _game.getPlayers()[_game.currentPlayer()]->setCoints(_game.getPlayers()[_game.currentPlayer()]->getCoins() + 1); 
+    }
     setupGameScreen(message);
 }
 
+bool GameSetupGUI::askAllWithRole(const std::string& role) {
+    for (const auto& player : _game.getPlayers()) {
+        std::string name = player->getName();
+        if (player->get_type() == role && name != _game.getPlayers()[_game.currentPlayer()]->getName()) { // נניח שאתה בודק גם אם השחקן חי
+            
+            if(role == "General" && player->getCoins() < 5){
+                    continue;
+            }
+            bool approved = allowAction(name); // מציג שם מלא
+            if (approved) {
+                if(role == "General" && player->getCoins() < 5){
+                    continue;
+                }
+                player->setCoints(player->getCoins() - 5);
+                return true; // פעולה אושרה על ידי שחקן אחד לפחות
+            }
+        }
+    }
+    return false; // כולם דחו
+}
+
+
+
+bool GameSetupGUI::allowAction(const std::string& playerName) {
+    sf::RenderWindow window(sf::VideoMode(400, 200), "Block Action?", sf::Style::Titlebar | sf::Style::Close);
+    window.setFramerateLimit(60);
+    
+    sf::Text title("Player: " + playerName + "\nDo you want to BLOCK this action?", font, 20);
+    title.setFillColor(sf::Color::White);
+    title.setPosition(30, 30);
+
+    sf::RectangleShape blockButton(sf::Vector2f(120, 50));
+    blockButton.setPosition(50, 120);
+    blockButton.setFillColor(sf::Color::Green);
+
+    sf::Text blockText("BLOCK", font, 18);
+    blockText.setFillColor(sf::Color::Black);
+    blockText.setPosition(80, 135);
+
+    sf::RectangleShape allowButton(sf::Vector2f(120, 50));
+    allowButton.setPosition(230, 120);
+    allowButton.setFillColor(sf::Color::Red);
+
+    sf::Text allowText("ALLOW", font, 18);
+    allowText.setFillColor(sf::Color::White);
+    allowText.setPosition(260, 135);
+
+    bool result = false;
+    bool actionTaken = false;
+
+    while (window.isOpen() && !actionTaken) {
+        sf::Event event;
+        while (window.pollEvent(event)) {
+            if (event.type == sf::Event::Closed) {
+                window.close();
+                actionTaken = true;
+                result = false; // Default to allow (don't block) if window is closed
+            }
+
+            if (event.type == sf::Event::MouseButtonPressed &&
+                event.mouseButton.button == sf::Mouse::Left) {
+                sf::Vector2f mousePos(static_cast<float>(event.mouseButton.x), 
+                                    static_cast<float>(event.mouseButton.y));
+
+                if (blockButton.getGlobalBounds().contains(mousePos)) {
+                    result = true;  // Return true = BLOCK the action
+                    actionTaken = true;
+                }
+                else if (allowButton.getGlobalBounds().contains(mousePos)) {
+                    result = false; // Return false = ALLOW the action (don't block)
+                    actionTaken = true;
+                }
+            }
+
+            // Keyboard support
+            if (event.type == sf::Event::KeyPressed) {
+                if (event.key.code == sf::Keyboard::B || event.key.code == sf::Keyboard::Y) {
+                    result = true;  // BLOCK
+                    actionTaken = true;
+                }
+                else if (event.key.code == sf::Keyboard::A || event.key.code == sf::Keyboard::N || event.key.code == sf::Keyboard::Escape) {
+                    result = false; // ALLOW (don't block)
+                    actionTaken = true;
+                }
+            }
+        }
+
+        if (window.isOpen()) {
+            window.clear(sf::Color(50, 50, 50));
+            window.draw(title);
+            window.draw(blockButton);
+            window.draw(blockText);
+            window.draw(allowButton);
+            window.draw(allowText);
+            window.display();
+        }
+    }
+
+    if (window.isOpen()) {
+        window.close();
+    }
+
+    return result;
+}
+
+
+
 std::shared_ptr<Player> GameSetupGUI::displayPlayerSelection(const std::string& title) {
     std::vector<std::unique_ptr<Button>> playerButtons;
-    const auto& players = _game.getPlayers(); // assumes std::vector<Player>
+    const auto& players = _game.playersForSelection(_game.players()[_game.currentPlayer()]); // assumes std::vector<Player>
 
     sf::Text titleText;
     titleText.setFont(font);
@@ -868,4 +1034,38 @@ std::vector<std::string> GameSetupGUI::getPlayerNames() const {
         names.push_back(input->getText());
     }
     return names;
+}
+
+void GameSetupGUI::showGameEndScreen() {
+    window.clear(sf::Color(0, 0, 0)); // Black background
+
+    const std::string& winnerName = _game.winner();
+
+    sf::Text title("Game Over", font, 48);
+    title.setFillColor(sf::Color::White);
+    title.setPosition(250, 150);
+
+    sf::Text winnerText("Winner: " + winnerName, font, 36);
+    winnerText.setFillColor(sf::Color::Green);
+    winnerText.setPosition(250, 250);
+
+    sf::Text exitText("Press ESC to exit", font, 24);
+    exitText.setFillColor(sf::Color(200, 200, 200));
+    exitText.setPosition(250, 400);
+
+    while (window.isOpen()) {
+        sf::Event event;
+        while (window.pollEvent(event)) {
+            if (event.type == sf::Event::Closed)
+                window.close();
+            if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape)
+                window.close();
+        }
+
+        window.clear();
+        window.draw(title);
+        window.draw(winnerText);
+        window.draw(exitText);
+        window.display();
+    }
 }

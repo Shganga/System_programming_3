@@ -61,12 +61,14 @@ private:
     sf::Font font;
     bool fontLoaded;
     std::vector<sf::RectangleShape> playerBoxes;
-    
+    TextInput* activeInput = nullptr;
+
     
     enum Screen {
         PLAYER_COUNT_SELECTION,
         PLAYER_NAMES_INPUT,
-        GAME_SCREEN
+        GAME_SCREEN,
+        GAME_END
     };
     
     Screen currentScreen;
@@ -75,6 +77,7 @@ private:
     std::vector<std::unique_ptr<Button>> buttons;
     std::vector<sf::Text> labels;
     std::vector<std::unique_ptr<TextInput>> playerInputs;
+
     
     void setupPlayerCountScreen();
     void setupPlayerNamesScreen();
@@ -87,6 +90,9 @@ private:
     bool loadFont();
     void handleGameAction(size_t buttonIndex);
     std::shared_ptr<Player> displayPlayerSelection(const std::string& title);
+    bool allowAction(const std::string& playerName);
+    bool askAllWithRole(const std::string& role);
+    void showGameEndScreen();
 
     
 public:
@@ -96,4 +102,4 @@ public:
     int getPlayerCount() const { return selectedPlayerCount; }
 };
 
-#endif // GUI_HPP
+#endif //GUI_HPP

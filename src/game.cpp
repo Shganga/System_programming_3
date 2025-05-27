@@ -41,6 +41,8 @@ void Game::resetArrest(){
 }
 
 int Game::currentPlayer() const{
+    if(_current_turn == 0)
+        return 0;
     return _current_turn % _players_list.size();
 }
 
@@ -71,6 +73,26 @@ std::string Game::roleGenerator() const {
 
     std::uniform_int_distribution<size_t> dist(0, roles.size() - 1);
     return roles[dist(rng)];
+}
+
+void Game::gameCoup(const std::string& name){
+    for (auto it = _players_list.begin(); it != _players_list.end(); ++it) {
+        if ((*it)->getName() == name) {
+            _out_list.push_back(*it);       // מוסיף לרשימת המודחים
+            _players_list.erase(it);        // מוחק מרשימת השחקנים הפעילים
+            return;                         // יוצא אחרי שמצא
+        }
+    }
+}
+
+std::vector<std::shared_ptr<Player>> Game::playersForSelection(const std::string& name) {
+    std::vector<std::shared_ptr<Player>> result;
+    for (const auto& player : _players_list) {
+        if (player->getName() != name) {
+            result.push_back(player);
+        }
+    }
+    return result;
 }
 
 std::string Game::winner() const {

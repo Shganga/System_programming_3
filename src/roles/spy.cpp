@@ -1,7 +1,7 @@
 #include "spy.hpp"
 
 int Spy::ability(Player& player){
-    _can_arrest = false;
+    player.setCanArrest(false);
     return player.getCoins();
 }
 

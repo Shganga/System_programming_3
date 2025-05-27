@@ -27,6 +27,9 @@ public:
     void setSanctioned(bool status);
     bool isArrested() const;
     void setArrest(bool status);
+    void setCoints(int coins);
+    void setCanArrest(bool can);
+    bool getCanArrest();
 
 protected:
     std::string _name;

@@ -65,6 +65,12 @@ bool Player::arrest(Player& target) {
     target._arrested = true;
     return true;
 }
+void Player::setCanArrest(bool can){
+    _can_arrest = can;
+}
+bool Player::getCanArrest(){
+    return _can_arrest;
+}
 
 bool Player::sanction(Player& target) {
     if (_coins < 3) {
@@ -98,6 +104,9 @@ int Player::getCoins() const {
     return _coins;
 }
 
+void Player::setCoints(int coins){
+    _coins = coins;
+}
 
 bool Player::isSanctioned() const {
     return _sanctioned;
