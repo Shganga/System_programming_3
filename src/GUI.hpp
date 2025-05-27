@@ -45,7 +45,7 @@ private:
 public:
     TextInput(float x, float y, float width, float height, sf::Font& font);
     void draw(sf::RenderWindow& window);
-    void update(sf::Vector2i mousePos);
+    void update();
     bool isClicked(sf::Vector2i mousePos);
     void setActive(bool active);
     void handleTextInput(char inputChar);
@@ -61,12 +61,14 @@ private:
     sf::Font font;
     bool fontLoaded;
     std::vector<sf::RectangleShape> playerBoxes;
-    
+    sf::Text errorText;
+
     
     enum Screen {
         PLAYER_COUNT_SELECTION,
         PLAYER_NAMES_INPUT,
-        GAME_SCREEN
+        GAME_SCREEN,
+        GAME_END
     };
     
     Screen currentScreen;
@@ -75,6 +77,7 @@ private:
     std::vector<std::unique_ptr<Button>> buttons;
     std::vector<sf::Text> labels;
     std::vector<std::unique_ptr<TextInput>> playerInputs;
+
     
     void setupPlayerCountScreen();
     void setupPlayerNamesScreen();
@@ -86,12 +89,18 @@ private:
     void startGame();
     bool loadFont();
     void handleGameAction(size_t buttonIndex);
+    std::shared_ptr<Player> displayPlayerSelection(const std::string& title);
+    bool allowAction(const std::string& playerName);
+    bool askAllWithRole(const std::string& role);
+    void showGameEndScreen();
+
     
 public:
     GameSetupGUI();
+    ~GameSetupGUI() = default;
     void run();
     std::vector<std::string> getPlayerNames() const;
     int getPlayerCount() const { return selectedPlayerCount; }
 };
 
-#endif // GUI_HPP
+#endif //GUI_HPP

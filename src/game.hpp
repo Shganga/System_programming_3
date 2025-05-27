@@ -11,6 +11,9 @@
 class Game {
 public:
     Game();
+    ~Game(); // Destructor
+    Game(const Game& other); // Copy constructor
+    Game& operator=(const Game& other); // Copy assignment
 
     void add_player(std::shared_ptr<Player> player);
 
@@ -21,7 +24,10 @@ public:
     std::string roleGenerator() const;
     int currentPlayer() const;
     void resetArrest();
-    void next_turn();                      
+    void next_turn(); 
+    void bribe();    
+    std::vector<std::shared_ptr<Player>> playersForSelection(const std::string& name);
+    void gameCoup(const std::string& name);
 
     
 
@@ -30,6 +36,7 @@ private:
     std::vector<std::shared_ptr<Player>> _out_list;
     size_t _current_turn;     
     size_t _current_round;
+    bool isbribe;
 };
 
 #endif

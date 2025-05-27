@@ -4,6 +4,31 @@
 #include <chrono>
 
 Game::Game() : _current_turn(0), _current_round(1) {}
+Game::~Game() {
+    // Smart pointers clean themselves up, but you can clear explicitly
+    _players_list.clear();
+    _out_list.clear();
+}
+
+Game::Game(const Game& other)
+    : _current_turn(other._current_turn),
+      _current_round(other._current_round),
+      isbribe(other.isbribe)
+{
+    _players_list = other._players_list; // shared_ptr allows safe copy
+    _out_list = other._out_list;
+}
+
+Game& Game::operator=(const Game& other) {
+    if (this != &other) {
+        _current_turn = other._current_turn;
+        _current_round = other._current_round;
+        isbribe = other.isbribe;
+        _players_list = other._players_list;
+        _out_list = other._out_list;
+    }
+    return *this;
+}
 
 void Game::add_player(std::shared_ptr<Player> player) {
     _players_list.push_back(player);
@@ -17,11 +42,20 @@ std::string Game::turn() const {
 }
 
 void Game::next_turn(){
-    _current_turn++;
-    if(_current_turn % _players_list.size() == 0){
-        _current_round++;
-        resetArrest();
+    if(!isbribe){
+        _current_turn++;
+        if(_current_turn % _players_list.size() == 0){
+            _current_round++;
+            resetArrest();
+        }
     }
+    else{
+        isbribe = false;
+    }
+}
+
+void Game::bribe(){
+    isbribe = true;
 }
 
 void Game::resetArrest(){
@@ -32,6 +66,8 @@ void Game::resetArrest(){
 }
 
 int Game::currentPlayer() const{
+    if(_current_turn == 0)
+        return 0;
     return _current_turn % _players_list.size();
 }
 
@@ -64,11 +100,33 @@ std::string Game::roleGenerator() const {
     return roles[dist(rng)];
 }
 
+void Game::gameCoup(const std::string& name){
+    for (auto it = _players_list.begin(); it != _players_list.end(); ++it) {
+        if ((*it)->getName() == name) {
+            _out_list.push_back(*it);       // מוסיף לרשימת המודחים
+            _players_list.erase(it);        // מוחק מרשימת השחקנים הפעילים
+            return;                         // יוצא אחרי שמצא
+        }
+    }
+}
+
+std::vector<std::shared_ptr<Player>> Game::playersForSelection(const std::string& name) {
+    std::vector<std::shared_ptr<Player>> result;
+    for (const auto& player : _players_list) {
+        if (player->getName() != name) {
+            result.push_back(player);
+        }
+    }
+    return result;
+}
+
 std::string Game::winner() const {
     if(_players_list.size() == 1)
         return _players_list[0]->getName();
         
     throw std::runtime_error("The game is still ongoing");
 }
+
+
 
 

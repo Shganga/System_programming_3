@@ -45,15 +45,15 @@ bool Player::bribe() {
     // Allow extra action (external handling if needed)
 }
 
-void Player::arrest(Player& target) {
-    if (!target._arrested) {
-        throw std::runtime_error("Cannot arrest the same player twice in a row.");
+bool Player::arrest(Player& target) {
+    if (target._arrested) {
+        return false;
     }
     if (!_can_arrest){
-        throw std::runtime_error("Cannot arrest because of a spy");
+        return false;
     }
     if (target._coins <= 0) {
-        throw std::runtime_error("Target player " + target._name + " has no coins to arrest.");
+        return false;
     }
     if (target.get_type() == "Merchant"){
         target._coins -= 2;
@@ -63,11 +63,18 @@ void Player::arrest(Player& target) {
         _coins += 1;
     }
     target._arrested = true;
+    return true;
+}
+void Player::setCanArrest(bool can){
+    _can_arrest = can;
+}
+bool Player::getCanArrest(){
+    return _can_arrest;
 }
 
-void Player::sanction(Player& target) {
+bool Player::sanction(Player& target) {
     if (_coins < 3) {
-        throw std::runtime_error("Player " + _name + " does not have enough coins to sanction (needs 3).");
+        return false;
     }
     if (target.get_type() == "Baron"){
         target._coins++;
@@ -77,13 +84,15 @@ void Player::sanction(Player& target) {
     }
     _coins -= 3;
     target._sanctioned = true;
+    return true;
 }
 
-void Player::coup(Player& target) {
+bool Player::coup(Player& target) {
     if (_coins < 7) {
-        throw std::runtime_error("Player " + _name + " does not have enough coins to coup (needs 7).");
+        return false;
     }
     _coins -= 7;
+    return true;
     // External game logic should handle actual removal
 }
 
@@ -95,6 +104,9 @@ int Player::getCoins() const {
     return _coins;
 }
 
+void Player::setCoins(int coins){
+    _coins = coins;
+}
 
 bool Player::isSanctioned() const {
     return _sanctioned;

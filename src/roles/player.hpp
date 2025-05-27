@@ -15,9 +15,9 @@ public:
     bool gather();
     virtual bool tax();
     bool bribe();
-    void arrest(Player& target);
-    void sanction(Player& target);
-    void coup(Player& target);
+    bool arrest(Player& target);
+    bool sanction(Player& target);
+    bool coup(Player& target);
     virtual std::string get_type() const = 0;
 
 
@@ -27,6 +27,9 @@ public:
     void setSanctioned(bool status);
     bool isArrested() const;
     void setArrest(bool status);
+    void setCoins(int coins);
+    void setCanArrest(bool can);
+    bool getCanArrest();
 
 protected:
     std::string _name;

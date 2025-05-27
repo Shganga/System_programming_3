@@ -1,7 +1,7 @@
 #include "spy.hpp"
 
-int Spy::LookAndBlock(Player& player){
-    _can_arrest = false;
+int Spy::ability(Player& player){
+    player.setCanArrest(false);
     return player.getCoins();
 }
 
