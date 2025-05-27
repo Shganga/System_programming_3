@@ -116,7 +116,7 @@ void TextInput::draw(sf::RenderWindow& window) {
     }
 }
 
-void TextInput::update(sf::Vector2i mousePos) {
+void TextInput::update() {
     // Update cursor blinking
     if (cursorClock.getElapsedTime().asMilliseconds() > 500) {
         showCursor = !showCursor;
@@ -167,14 +167,35 @@ void TextInput::clear() {
 }
 
 // GameSetupGUI implementation
-GameSetupGUI::GameSetupGUI() : window(sf::VideoMode(900, 700), "Game Setup - Player Selection"), 
-                               currentScreen(PLAYER_COUNT_SELECTION), 
-                               selectedPlayerCount(2),
-                               fontLoaded(false) {
-    _game = Game();
+GameSetupGUI::GameSetupGUI()
+    : _game()
+    , window(sf::VideoMode(900, 700), "Game Setup - Player Selection")
+    , font()                // sf::Font default constructor
+    , fontLoaded(false)
+    , playerBoxes()         // vector default constructor
+    , errorText()           // sf::Text default constructor
+    , currentScreen(PLAYER_COUNT_SELECTION)
+    , selectedPlayerCount(2)
+    , buttons()
+    , labels()
+    , playerInputs()
+{
     fontLoaded = loadFont();
     setupPlayerCountScreen();
 }
+
+// GameSetupGUI::~GameSetupGUI() {
+//     // Clear all containers first to avoid dangling references
+//     buttons.clear();
+//     labels.clear();
+//     playerInputs.clear();
+
+    
+//     // Close window safely
+//     if (window.isOpen()) {
+//         window.close();
+//     }
+// }
 
 bool GameSetupGUI::loadFont() {
     // רשימת נתיבים פונט אופציונליים לפי סדר ניסיון
@@ -215,10 +236,18 @@ void GameSetupGUI::run() {
     std::cout << "Starting Game Setup GUI..." << std::endl;
     std::cout << "Choose number of players (2-6) by clicking on the numbers." << std::endl;
     
-    while (window.isOpen()) {
-        handleEvents();
-        update();
-        render();
+    try {
+        while (window.isOpen()) {
+            handleEvents();
+            update();
+            render();
+        }
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Exception in main loop: " << e.what() << std::endl;
+        if (window.isOpen()) {
+            window.close();
+        }
     }
 }
 
@@ -695,7 +724,7 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
             break;
         }
         case 4:{  // Sanction
-            std::shared_ptr<Player> selected = displayPlayerSelection("Choose Sunction");
+            std::shared_ptr<Player> selected = displayPlayerSelection(" Choose Sunction");
             if (selected) {
                 std::cout << "Selected player: " << selected->getName() << std::endl;
                 action = _game.getPlayers()[turn]->sanction(*selected);
@@ -717,7 +746,7 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
             break;
         }
         case 5:{  // Coup
-            std::shared_ptr<Player> selected = displayPlayerSelection("Choose Coup");
+            std::shared_ptr<Player> selected = displayPlayerSelection(" Choose Coup");
             bool action = _game.getPlayers()[turn]->coup(*selected);
             if (!action){
                 message = "7 coins needed";
@@ -758,7 +787,7 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
             else if(_game.getPlayers()[turn]->get_type() == "Spy"){
                 auto& player = _game.getPlayers()[turn];
                 Spy* spy = dynamic_cast<Spy*>(player.get());
-                std::shared_ptr<Player> selected = displayPlayerSelection("Choose for spy ability");
+                std::shared_ptr<Player> selected = displayPlayerSelection(" Choose for spy ability");
                 int coins = spy->ability(*selected);
                 if(coins != selected->getCoins()){
                     message = "ability didnt work";
@@ -789,7 +818,10 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
         showGameEndScreen();
     }
     if(_game.getPlayers()[_game.currentPlayer()]->get_type() == "Merchant" && _game.getPlayers()[_game.currentPlayer()]->getCoins() > 2){
-        _game.getPlayers()[_game.currentPlayer()]->setCoints(_game.getPlayers()[_game.currentPlayer()]->getCoins() + 1); 
+        _game.getPlayers()[_game.currentPlayer()]->setCoins(_game.getPlayers()[_game.currentPlayer()]->getCoins() + 1); 
+    }
+    if(_game.getPlayers()[_game.currentPlayer()]->getCoins() >= 10){
+        handleGameAction(5);
     }
     setupGameScreen(message);
 }
@@ -807,7 +839,7 @@ bool GameSetupGUI::askAllWithRole(const std::string& role) {
                 if(role == "General" && player->getCoins() < 5){
                     continue;
                 }
-                player->setCoints(player->getCoins() - 5);
+                player->setCoins(player->getCoins() - 5);
                 return true; // פעולה אושרה על ידי שחקן אחד לפחות
             }
         }
@@ -818,8 +850,16 @@ bool GameSetupGUI::askAllWithRole(const std::string& role) {
 
 
 bool GameSetupGUI::allowAction(const std::string& playerName) {
-    sf::RenderWindow window(sf::VideoMode(400, 200), "Block Action?", sf::Style::Titlebar | sf::Style::Close);
-    window.setFramerateLimit(60);
+    // Create a separate window for this dialog
+    sf::RenderWindow dialogWindow(sf::VideoMode(400, 200), "Block Action?", 
+                                 sf::Style::Titlebar | sf::Style::Close);
+    dialogWindow.setFramerateLimit(60);
+    
+    // Use a local copy of font or check if font is valid
+    if (!fontLoaded) {
+        std::cerr << "Warning: Font not loaded for dialog" << std::endl;
+        return false; // or handle without font
+    }
     
     sf::Text title("Player: " + playerName + "\nDo you want to BLOCK this action?", font, 20);
     title.setFillColor(sf::Color::White);
@@ -844,56 +884,68 @@ bool GameSetupGUI::allowAction(const std::string& playerName) {
     bool result = false;
     bool actionTaken = false;
 
-    while (window.isOpen() && !actionTaken) {
-        sf::Event event;
-        while (window.pollEvent(event)) {
-            if (event.type == sf::Event::Closed) {
-                window.close();
-                actionTaken = true;
-                result = false; // Default to allow (don't block) if window is closed
+    // Ensure dialog window stays on top and is focused
+    dialogWindow.requestFocus();
+
+    try {
+        while (dialogWindow.isOpen() && !actionTaken) {
+            sf::Event event;
+            while (dialogWindow.pollEvent(event)) {
+                if (event.type == sf::Event::Closed) {
+                    actionTaken = true;
+                    result = false; // Default to allow (don't block) if window is closed
+                    break;
+                }
+
+                if (event.type == sf::Event::MouseButtonPressed &&
+                    event.mouseButton.button == sf::Mouse::Left) {
+                    sf::Vector2f mousePos(static_cast<float>(event.mouseButton.x), 
+                                        static_cast<float>(event.mouseButton.y));
+
+                    if (blockButton.getGlobalBounds().contains(mousePos)) {
+                        result = true;  // Return true = BLOCK the action
+                        actionTaken = true;
+                    }
+                    else if (allowButton.getGlobalBounds().contains(mousePos)) {
+                        result = false; // Return false = ALLOW the action (don't block)
+                        actionTaken = true;
+                    }
+                }
+
+                // Keyboard support
+                if (event.type == sf::Event::KeyPressed) {
+                    if (event.key.code == sf::Keyboard::B || event.key.code == sf::Keyboard::Y) {
+                        result = true;  // BLOCK
+                        actionTaken = true;
+                    }
+                    else if (event.key.code == sf::Keyboard::A || event.key.code == sf::Keyboard::N || 
+                             event.key.code == sf::Keyboard::Escape) {
+                        result = false; // ALLOW (don't block)
+                        actionTaken = true;
+                    }
+                }
             }
 
-            if (event.type == sf::Event::MouseButtonPressed &&
-                event.mouseButton.button == sf::Mouse::Left) {
-                sf::Vector2f mousePos(static_cast<float>(event.mouseButton.x), 
-                                    static_cast<float>(event.mouseButton.y));
-
-                if (blockButton.getGlobalBounds().contains(mousePos)) {
-                    result = true;  // Return true = BLOCK the action
-                    actionTaken = true;
-                }
-                else if (allowButton.getGlobalBounds().contains(mousePos)) {
-                    result = false; // Return false = ALLOW the action (don't block)
-                    actionTaken = true;
-                }
+            // Only render if window is still open and no action taken
+            if (dialogWindow.isOpen() && !actionTaken) {
+                dialogWindow.clear(sf::Color(50, 50, 50));
+                dialogWindow.draw(title);
+                dialogWindow.draw(blockButton);
+                dialogWindow.draw(blockText);
+                dialogWindow.draw(allowButton);
+                dialogWindow.draw(allowText);
+                dialogWindow.display();
             }
-
-            // Keyboard support
-            if (event.type == sf::Event::KeyPressed) {
-                if (event.key.code == sf::Keyboard::B || event.key.code == sf::Keyboard::Y) {
-                    result = true;  // BLOCK
-                    actionTaken = true;
-                }
-                else if (event.key.code == sf::Keyboard::A || event.key.code == sf::Keyboard::N || event.key.code == sf::Keyboard::Escape) {
-                    result = false; // ALLOW (don't block)
-                    actionTaken = true;
-                }
-            }
-        }
-
-        if (window.isOpen()) {
-            window.clear(sf::Color(50, 50, 50));
-            window.draw(title);
-            window.draw(blockButton);
-            window.draw(blockText);
-            window.draw(allowButton);
-            window.draw(allowText);
-            window.display();
         }
     }
+    catch (const std::exception& e) {
+        std::cerr << "Exception in allowAction: " << e.what() << std::endl;
+        result = false;
+    }
 
-    if (window.isOpen()) {
-        window.close();
+    // Ensure dialog window is closed
+    if (dialogWindow.isOpen()) {
+        dialogWindow.close();
     }
 
     return result;
@@ -907,7 +959,7 @@ std::shared_ptr<Player> GameSetupGUI::displayPlayerSelection(const std::string& 
 
     sf::Text titleText;
     titleText.setFont(font);
-    titleText.setString(title);
+    titleText.setString(_game.players()[_game.currentPlayer()] + title);
     titleText.setCharacterSize(30);
     titleText.setFillColor(sf::Color::White);
     titleText.setPosition(100, 50);
@@ -931,8 +983,7 @@ std::shared_ptr<Player> GameSetupGUI::displayPlayerSelection(const std::string& 
                 sf::Vector2i mousePos = sf::Mouse::getPosition(window);
                 for (size_t i = 0; i < playerButtons.size(); ++i) {
                     if (playerButtons[i]->isClicked(mousePos)) {
-                        std::shared_ptr<Player> selected = _game.getPlayers()[i];
-                        return players[i]; // return selected player's index
+                        return players[i]; 
                     }
                 }
             }
@@ -964,33 +1015,43 @@ void GameSetupGUI::update() {
     // Update text inputs
     if (currentScreen == PLAYER_NAMES_INPUT) {
         for (auto& input : playerInputs) {
-            input->update(mousePos);
+            input->update();
         }
     }
 }
 
 void GameSetupGUI::render() {
-    window.clear(sf::Color(245, 245, 250)); // Very light blue-gray background
+    window.clear(sf::Color(245,245,250)); // Clear the window with black color
     
-    // Draw all labels
-    for (const auto& label : labels) {
-        window.draw(label);
+    // Draw player boxes (e.g. for highlighting players or UI decoration)
+    for (auto& box : playerBoxes) {
+        window.draw(box);
     }
-    
-    // Draw all buttons
-    for (const auto& button : buttons) {
+
+    // Draw buttons
+    for (auto& button : buttons) {
         button->draw(window);
     }
     
-    // Draw text inputs if in name input screen
+    // Draw labels (sf::Text objects)
+    for (auto& label : labels) {
+        window.draw(label);
+    }
+    
+    // Draw player name text inputs only if on PLAYER_NAMES_INPUT screen
     if (currentScreen == PLAYER_NAMES_INPUT) {
-        for (const auto& input : playerInputs) {
+        for (auto& input : playerInputs) {
             input->draw(window);
         }
     }
     
+    // Draw error text if any
+    window.draw(errorText);
+
+    // Display everything on the window
     window.display();
 }
+
 
 void GameSetupGUI::startGame() {
     std::vector<std::string> playerNames;
@@ -1000,6 +1061,10 @@ void GameSetupGUI::startGame() {
 
     // Check for empty names
     for (const auto& input : playerInputs) {
+        if (input == nullptr) {
+            std::cout << "nullptr found in playerInputs!" << std::endl;
+            continue;
+        }
         std::string name = input->getText();
         if (name.empty()) {
             errorText.setString("Please enter names for all players!");
@@ -1037,8 +1102,8 @@ void GameSetupGUI::startGame() {
 
 std::vector<std::string> GameSetupGUI::getPlayerNames() const {
     std::vector<std::string> names;
-    for (const auto& input : playerInputs) {
-        names.push_back(input->getText());
+    for (const auto& input : _game.players()) {
+        names.push_back(input);
     }
     return names;
 }

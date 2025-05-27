@@ -45,7 +45,7 @@ private:
 public:
     TextInput(float x, float y, float width, float height, sf::Font& font);
     void draw(sf::RenderWindow& window);
-    void update(sf::Vector2i mousePos);
+    void update();
     bool isClicked(sf::Vector2i mousePos);
     void setActive(bool active);
     void handleTextInput(char inputChar);
@@ -61,7 +61,6 @@ private:
     sf::Font font;
     bool fontLoaded;
     std::vector<sf::RectangleShape> playerBoxes;
-    TextInput* activeInput = nullptr;
     sf::Text errorText;
 
     
@@ -98,6 +97,7 @@ private:
     
 public:
     GameSetupGUI();
+    ~GameSetupGUI() = default;
     void run();
     std::vector<std::string> getPlayerNames() const;
     int getPlayerCount() const { return selectedPlayerCount; }

@@ -4,6 +4,31 @@
 #include <chrono>
 
 Game::Game() : _current_turn(0), _current_round(1) {}
+Game::~Game() {
+    // Smart pointers clean themselves up, but you can clear explicitly
+    _players_list.clear();
+    _out_list.clear();
+}
+
+Game::Game(const Game& other)
+    : _current_turn(other._current_turn),
+      _current_round(other._current_round),
+      isbribe(other.isbribe)
+{
+    _players_list = other._players_list; // shared_ptr allows safe copy
+    _out_list = other._out_list;
+}
+
+Game& Game::operator=(const Game& other) {
+    if (this != &other) {
+        _current_turn = other._current_turn;
+        _current_round = other._current_round;
+        isbribe = other.isbribe;
+        _players_list = other._players_list;
+        _out_list = other._out_list;
+    }
+    return *this;
+}
 
 void Game::add_player(std::shared_ptr<Player> player) {
     _players_list.push_back(player);

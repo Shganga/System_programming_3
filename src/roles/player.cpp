@@ -104,7 +104,7 @@ int Player::getCoins() const {
     return _coins;
 }
 
-void Player::setCoints(int coins){
+void Player::setCoins(int coins){
     _coins = coins;
 }
 

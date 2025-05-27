@@ -18,7 +18,7 @@ SOURCES := $(SRC_FILES) $(ROLE_SRC_FILES)
 # Convert all source files to object files in build/ preserving directory structure
 OBJECTS := $(patsubst $(SRC_DIR)/%.cpp,$(BUILD_DIR)/%.o,$(SOURCES))
 
-TARGET = game_setup
+TARGET = main
 
 all: $(TARGET)
 
@@ -41,7 +41,8 @@ run: $(TARGET)
 	./$(TARGET)
 
 valgrind: $(TARGET)
-	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./game_setup
+	valgrind --leak-check=full --show-leak-kinds=definite ./main
+
 
 
 

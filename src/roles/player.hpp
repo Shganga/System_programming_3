@@ -27,7 +27,7 @@ public:
     void setSanctioned(bool status);
     bool isArrested() const;
     void setArrest(bool status);
-    void setCoints(int coins);
+    void setCoins(int coins);
     void setCanArrest(bool can);
     bool getCanArrest();
 

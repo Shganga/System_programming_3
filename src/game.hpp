@@ -11,6 +11,9 @@
 class Game {
 public:
     Game();
+    ~Game(); // Destructor
+    Game(const Game& other); // Copy constructor
+    Game& operator=(const Game& other); // Copy assignment
 
     void add_player(std::shared_ptr<Player> player);
 
