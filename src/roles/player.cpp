@@ -80,6 +80,9 @@ bool Player::sanction(Player& target) {
         target._coins++;
     }
     if (target.get_type() == "Judge"){
+        if (_coins < 4) {
+            return false;
+        }
         _coins--;
     }
     _coins -= 3;

@@ -750,6 +750,7 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
             bool action = _game.getPlayers()[turn]->coup(*selected);
             if (!action){
                 message = "7 coins needed";
+                break;
             }
             block = askAllWithRole("General");
             if(block){
@@ -812,7 +813,7 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
             break;
     }
     
-
+    
     if(_game.getPlayers().size() == 1){
         currentScreen = GAME_END;
         showGameEndScreen();
@@ -823,8 +824,14 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
     if(_game.getPlayers()[_game.currentPlayer()]->getCoins() >= 10){
         handleGameAction(5);
     }
+    if(!_game.canAction()){
+        _game.getPlayers()[_game.currentPlayer()]->setSanctioned(false);
+        _game.next_turn();
+    }
     setupGameScreen(message);
 }
+
+
 
 bool GameSetupGUI::askAllWithRole(const std::string& role) {
     for (const auto& player : _game.getPlayers()) {

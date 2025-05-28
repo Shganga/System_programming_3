@@ -82,6 +82,19 @@ std::vector<std::string> Game::players() const {
     return active_players;
 }
 
+bool Game::canAction(){
+    std::shared_ptr<Player> player = _players_list[currentPlayer()];
+    if(!player->isSanctioned() || player->getCoins() > 2){
+        return true;
+    }
+    for (const auto& p : _players_list) {
+        if (p->getName() != player->getName() && !p->isArrested()) {
+            return true;
+        }
+    }
+    return false;
+}
+
 std::vector<std::shared_ptr<Player>> Game::getPlayers(){
     return _players_list;
 }
