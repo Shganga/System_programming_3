@@ -36,7 +36,9 @@ public:
     bool isGame();
     void restorePlayer();
     void setBribe(bool bribe);
-    
+    int getTurn() const;
+    std::vector<std::shared_ptr<Player>> getOutList();
+    bool getBribe() const;
 
 private:
     std::vector<std::shared_ptr<Player>> _players_list;  

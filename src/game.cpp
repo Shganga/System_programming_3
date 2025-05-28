@@ -10,7 +10,7 @@
  * Initializes the game with the current turn set to 0
  * and the current round set to 1.
  */
-Game::Game() : _current_turn(0), _current_round(1), isStillActive(true) {}
+Game::Game() : _current_turn(0), _current_round(1), isStillActive(true), isbribe(false) {}
 
 /**
  * @brief Destructor for the Game class.
@@ -297,7 +297,7 @@ void Game::manageAfterTrun(){
     if(current->isSanctioned()){
         current->setSanctioned(false);
     }
-    if(current->getCanArrest()){
+    if(!current->getCanArrest()){
         current->setCanArrest(true);
     }
 }
@@ -346,6 +346,16 @@ void Game::setBribe(bool bribe){
     isbribe = bribe;
 }
 
+int Game::getTurn() const{
+    return _current_turn;
+}
+
+std::vector<std::shared_ptr<Player>> Game::getOutList(){
+    return _out_list;
+}
+bool Game::getBribe() const{
+    return isbribe;
+}
 
 
 

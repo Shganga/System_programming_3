@@ -28,7 +28,7 @@ MAIN_SOURCES := $(SRC_FILES) $(ROLE_SRC_FILES)
 MAIN_OBJECTS := $(patsubst $(SRC_DIR)/%.cpp,$(BUILD_DIR)/%.o,$(MAIN_SOURCES))
 
 # Test depends only on minimal sources your tests need:
-TEST_DEPENDENT_SRCS := $(SRC_DIR)/game.cpp $(SRC_DIR)/$(ROLES_DIR)/player.cpp
+TEST_DEPENDENT_SRCS := $(SRC_DIR)/game.cpp $(ROLE_SRC_FILES)
 TEST_OBJECTS := $(patsubst $(SRC_DIR)/%.cpp,$(BUILD_DIR)/%.o,$(TEST_DEPENDENT_SRCS))
 
 # Test source files

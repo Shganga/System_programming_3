@@ -38,6 +38,7 @@ public:
     size_t getIndex() const;
     void setIndex(size_t index);
     void setAction(Action action);
+    Action getLastAction() const;
 
 protected:
     std::string _name;

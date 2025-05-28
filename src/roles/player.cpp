@@ -327,3 +327,7 @@ int Player::spyAbility(Player& target) {
 void Player::ability(Player& target) {
     throw std::runtime_error(get_type() + " does not have a targeted ability.");
 }
+
+Action Player::getLastAction() const{
+    return _last_action;
+}
