@@ -9,8 +9,9 @@
  * @param player Reference to the target player affected by the Spy.
  * @return int The number of coins the target player has.
  */
-int Spy::ability(Player& player){
+int Spy::spyAbility(Player& player){
     player.setCanArrest(false);
+    _last_action = Action::Ability;
     return player.getCoins();
 }
 

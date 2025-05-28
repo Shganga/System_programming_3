@@ -493,7 +493,7 @@ void GameSetupGUI::setupGameScreen(std::string message) {
 
     for (size_t i = 0; i < numPlayers && i < seats.size(); ++i) {
         sf::Vector2f pos = seats[i];
-        bool isCurrentPlayer = (i == static_cast<size_t>(_game.currentPlayer()));
+        bool isCurrentPlayer = (i == static_cast<size_t>(_game.currentPlayerIndex()));
 
 
         sf::Text playerName;
@@ -642,8 +642,7 @@ void GameSetupGUI::handleMouseClick(sf::Vector2i mousePos) {
 
 void GameSetupGUI::handleGameAction(size_t buttonIndex) {
     // Assuming order matches your actions vector from setupGameScreen()
-    int turn = _game.currentPlayer();
-    bool action;
+    int turn = _game.currentPlayerIndex();
     bool block = false;
     std::string message;
     switch (buttonIndex) {
@@ -651,8 +650,6 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
             try {
                 _game.getPlayers()[turn]->gather();
                 message = "Gather action triggered\n";
-                _game.manageAfterTrun();
-                _game.next_turn();
                 break;
             } catch (const std::exception& e) {
                 message = e.what();
@@ -661,39 +658,24 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
         case 1:  // Tax
             try {
                 _game.getPlayers()[turn]->tax();
-                _game.manageAfterTrun();
-                _game.next_turn();
                 message = "Tax action triggered\n";
+                askAllWithRole("Governor");
                 break;
             } catch (const std::exception& e) {
                 message = e.what();
                 break;
             }
-            block = askAllWithRole("Governor");
-            if(block){
-                message = "A Governor blocked your tax\n";
-                _game.next_turn();
-                break;
-            }
-            
+          
         case 2:  // Bribe
             try {
                 _game.getPlayers()[turn]->bribe();
-                _game.manageAfterTrun();
-                _game.bribe();
                 message = "Bribe action triggered\n";
+                askAllWithRole("Judge");
                 break;
             } catch (const std::exception& e) {
                 message = e.what();
                 break;
             }
-            block = askAllWithRole("Judge");
-            if(block){
-                message = "A Judge blocked your bribe\n";
-                _game.next_turn();
-                break;
-            }
-            
         case 3:{//arrest  
             std::shared_ptr<Player> selected = displayPlayerSelection("Choose Arrest");
             if (selected) {
@@ -701,8 +683,6 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
                 try {
                     _game.getPlayers()[turn]->arrest(*selected);
                     message = "Arrest was triggerd on " + selected->getName();
-                    _game.manageAfterTrun();
-                    _game.next_turn();
                     break;
                 } catch (const std::exception& e) {
                     message = e.what();
@@ -719,8 +699,6 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
                 try {
                     _game.getPlayers()[turn]->sanction(*selected);
                     message = "sanction was triggerd on " + selected->getName();
-                    _game.manageAfterTrun();
-                    _game.next_turn();
                     break;
                 } catch (const std::exception& e) {
                     message = e.what();
@@ -734,49 +712,29 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
         case 5:{  // Coup
             std::shared_ptr<Player> selected = displayPlayerSelection(" Choose Coup");
             try {
-                _game.getPlayers()[turn]->arrest(*selected);
-                _game.gameCoup(selected->getName());
-                _game.manageAfterTrun();
-                _game.next_turn();
+                _game.getPlayers()[turn]->coup(*selected);
+                askAllWithRole("General");
                 std::cout << "Coup action triggered\n";
                 break;
             } catch (const std::exception& e) {
                 message = e.what();
                 break;
             }
-            block = askAllWithRole("General");
-            if(block){
-                message = "A General blocked your Coup\n";
-                _game.next_turn();
-                break;
-            }
-            
         }
         case 6:{  // Special / Ability
             if(_game.getPlayers()[turn]->get_type() == "Baron"){
-                auto& player = _game.getPlayers()[turn];
-                Baron* baron = dynamic_cast<Baron*>(player.get());
                 try {
-                baron->ability();
-                message = "You used Baron's ability";
-                _game.manageAfterTrun();
-                _game.next_turn();
+                    _game.getPlayers()[turn]->ability();
+                    message = "You used Baron's ability";
                 } catch (const std::exception& e) {
                     message = e.what();  // Or: message = "Ability didn't work: " + std::string(e.what());
                 }
 
             }
             else if(_game.getPlayers()[turn]->get_type() == "Spy"){
-                auto& player = _game.getPlayers()[turn];
-                Spy* spy = dynamic_cast<Spy*>(player.get());
                 std::shared_ptr<Player> selected = displayPlayerSelection(" Choose for spy ability");
-                int coins = spy->ability(*selected);
-                if(coins != selected->getCoins()){
-                    message = "ability didnt work";
-                    break;
-                }
+                int coins = _game.getPlayers()[turn]->spyAbility(*selected);
                 message = "The player " + selected->getName() + " has " + std::to_string(coins) + " coins";
-                _game.manageAfterTrun();
                 break;
             }
             else{
@@ -790,44 +748,31 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
     }
     
     
-    if(_game.getPlayers().size() == 1){
+    if(!_game.isGame()){
         currentScreen = GAME_END;
         showGameEndScreen();
-    }
-    if(_game.getPlayers()[_game.currentPlayer()]->get_type() == "Merchant" && _game.getPlayers()[_game.currentPlayer()]->getCoins() > 2){
-        _game.getPlayers()[_game.currentPlayer()]->setCoins(_game.getPlayers()[_game.currentPlayer()]->getCoins() + 1); 
-    }
-    if(_game.getPlayers()[_game.currentPlayer()]->getCoins() >= 10){
-        handleGameAction(5);
-    }
-    if(!_game.canAction()){
-        _game.getPlayers()[_game.currentPlayer()]->setSanctioned(false);
-        _game.next_turn();
     }
     setupGameScreen(message);
 }
 
 
 
-bool GameSetupGUI::askAllWithRole(const std::string& role) {
+void GameSetupGUI::askAllWithRole(const std::string& role) {
     for (const auto& player : _game.getPlayers()) {
-        std::string name = player->getName();
-        if (player->get_type() == role && name != _game.getPlayers()[_game.currentPlayer()]->getName()) { // נניח שאתה בודק גם אם השחקן חי
+        if (player->get_type() == role && player->getName() != _game.getPlayers()[_game.currentPlayerIndex()]->getName()) { // נניח שאתה בודק גם אם השחקן חי
             
             if(role == "General" && player->getCoins() < 5){
                     continue;
             }
-            bool approved = allowAction(name); // מציג שם מלא
+            bool approved = allowAction(player->getName()); // מציג שם מלא
             if (approved) {
                 if(role == "General" && player->getCoins() < 5){
                     continue;
                 }
-                player->setCoins(player->getCoins() - 5);
-                return true; // פעולה אושרה על ידי שחקן אחד לפחות
+                player->ability(*_game.currentPlayer());
             }
         }
     }
-    return false; // כולם דחו
 }
 
 
@@ -938,11 +883,11 @@ bool GameSetupGUI::allowAction(const std::string& playerName) {
 
 std::shared_ptr<Player> GameSetupGUI::displayPlayerSelection(const std::string& title) {
     std::vector<std::unique_ptr<Button>> playerButtons;
-    const auto& players = _game.playersForSelection(_game.players()[_game.currentPlayer()]); // assumes std::vector<Player>
+    const auto& players = _game.playersForSelection(_game.players()[_game.currentPlayerIndex()]); // assumes std::vector<Player>
 
     sf::Text titleText;
     titleText.setFont(font);
-    titleText.setString(_game.players()[_game.currentPlayer()] + title);
+    titleText.setString(_game.players()[_game.currentPlayerIndex()] + title);
     titleText.setCharacterSize(30);
     titleText.setFillColor(sf::Color::White);
     titleText.setPosition(100, 50);
@@ -1072,9 +1017,7 @@ void GameSetupGUI::startGame() {
 
     // If all good, add players and move to game screen
     for (const auto& name : playerNames) {
-        std::string role = _game.roleGenerator();
-        std::shared_ptr<Player> player_ptr = PlayerFactory::createPlayer(role, name);
-        _game.add_player(player_ptr);
+        _game.add_player(name);
     }
 
     // Clear error message on success

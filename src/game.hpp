@@ -15,14 +15,15 @@ public:
     Game(const Game& other); // Copy constructor
     Game& operator=(const Game& other); // Copy assignment
 
-    void add_player(std::shared_ptr<Player> player);
+    void add_player(const std::string& name);
 
     std::string turn() const;       
     std::vector<std::shared_ptr<Player>> getPlayers();       
     std::vector<std::string> players() const;  
     std::string winner() const;         
     std::string roleGenerator() const;
-    int currentPlayer() const;
+    int currentPlayerIndex() const;
+    std::shared_ptr<Player> currentPlayer() const;
     void resetArrest();
     void next_turn(); 
     void bribe();    
@@ -30,7 +31,11 @@ public:
     void gameCoup(const std::string& name);
     bool canAction();
     void manageAfterTrun();
-
+    void manageNextTurn();
+    void isGameDone();
+    bool isGame();
+    void restorePlayer();
+    void setBribe(bool bribe);
     
 
 private:
@@ -39,6 +44,7 @@ private:
     size_t _current_turn;     
     size_t _current_round;
     bool isbribe;
+    bool isStillActive;
 };
 
 #endif

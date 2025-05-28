@@ -1,6 +1,7 @@
 //yanivg1000@gmail.com
 #include "player.hpp"
 #include <stdexcept>
+#include "game.hpp"
 
 
 /**
@@ -10,8 +11,8 @@
  * 
  * @param name The name of the player.
  */
-Player::Player(const std::string& name)
-    : _name(name), _coins(0), _sanctioned(false), _arrested(false), _can_arrest(true) {}
+Player::Player(Game& game,const std::string& name,size_t index)
+    : _game(game) ,_name(name), _coins(0), _sanctioned(false), _arrested(false), _can_arrest(true), _last_action(Action::None), _index(index) {}
 
 /**
  * @brief Destructor for the Player class.
@@ -26,7 +27,7 @@ Player::~Player() {}
  * @param other The Player object to copy.
  */
 Player::Player(const Player& other)
-    : _name(other._name), _coins(other._coins), _sanctioned(other._sanctioned), _arrested(false), _can_arrest(true) {}
+    : _game(other._game),_name(other._name), _coins(other._coins), _sanctioned(other._sanctioned), _arrested(false), _can_arrest(true), _last_action(other._last_action), _index(other._index) {}
 
 
 /**
@@ -39,11 +40,14 @@ Player::Player(const Player& other)
  */
 Player& Player::operator=(const Player& other) {
     if (this != &other) {
+        _game = other._game;
         _name = other._name;
         _coins = other._coins;
         _sanctioned = other._sanctioned;
         _arrested = other._arrested;
         _can_arrest = other._can_arrest;
+        _last_action = other._last_action;
+        _index = other._index;
     }
     return *this;
 }
@@ -58,7 +62,12 @@ void Player::gather() {
     if (_sanctioned) {
         throw std::runtime_error("Sanctioned players cannot gather coins.");
     }
+    if(_coins >= 10){
+        throw std::runtime_error("You have 10 or more coins must coup.");
+    }
+    _last_action = Action::Gather;
     _coins += 1;
+    _game.next_turn();
 }
 
 /**
@@ -74,7 +83,12 @@ void Player::tax() {
     if (_sanctioned) {
         throw std::runtime_error("Sanctioned players cannot use tax.");
     }
+    if(_coins >= 10){
+        throw std::runtime_error("You have 10 or more coins must coup.");
+    }
     _coins += 2;
+    _last_action = Action::Tax;
+    _game.next_turn();
 }
 
 /**
@@ -90,7 +104,12 @@ void Player::bribe() {
     if (_coins < 4) {
         throw std::runtime_error("You must have 4 coins");
     }
+    if(_coins >= 10){
+        throw std::runtime_error("You have 10 or more coins must coup.");
+    }
     _coins -= 4;
+    _last_action = Action::Bribe;
+    _game.bribe();
 }
 
 
@@ -118,15 +137,18 @@ void Player::arrest(Player& target) {
     if (target._coins <= 0) {
         throw std::runtime_error("Target does not have enough coins to be arrested.");
     }
-
+    if(_coins >= 10){
+        throw std::runtime_error("You have 10 or more coins must coup.");
+    }
     if (target.get_type() == "Merchant") {
         target._coins -= 2;
     } else {
         target._coins -= 1;
         _coins += 1;
     }
-
     target._arrested = true;
+    _last_action = Action::Arrest;
+    _game.next_turn();
 }
 
 
@@ -161,6 +183,9 @@ void Player::sanction(Player& target) {
     if (_coins < 3) {
         throw std::runtime_error("Not enough coins to sanction.");
     }
+    if(_coins >= 10){
+        throw std::runtime_error("You have 10 or more coins must coup.");
+    }
     if (target.get_type() == "Baron") {
         target._coins++;
     }
@@ -172,6 +197,8 @@ void Player::sanction(Player& target) {
     }
     _coins -= 3;
     target._sanctioned = true;
+    _last_action = Action::Sanction;
+    _game.next_turn();
 }
 
 
@@ -184,11 +211,14 @@ void Player::sanction(Player& target) {
  * @return true If the player had enough coins and performed the coup.
  * @return false If the player had fewer than 7 coins.
  */
-void Player::coup() {
+void Player::coup(Player& target) {
     if (_coins < 7) {
         throw std::runtime_error("Not enough coins to perform a coup.");
     }
     _coins -= 7;
+    _game.gameCoup(target.getName());
+    _last_action = Action::Coup;
+    _game.next_turn();
 }
 
 /**
@@ -272,4 +302,28 @@ bool Player::isArrested() const{
  */
 void Player::setArrest(bool status) {
     _arrested = status;
+}
+
+size_t Player::getIndex() const{
+    return _index;
+}
+
+void Player::setIndex(size_t index){
+    _index = index;
+}
+
+void Player::setAction(Action action){
+    _last_action = action;
+}
+
+void Player::ability() {
+    throw std::runtime_error(get_type() + " does not have a default ability.");
+}
+
+int Player::spyAbility(Player& target) {
+    throw std::runtime_error(get_type() + " does not support spyAbility.");
+}
+
+void Player::ability(Player& target) {
+    throw std::runtime_error(get_type() + " does not have a targeted ability.");
 }

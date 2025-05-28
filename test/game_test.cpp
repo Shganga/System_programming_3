@@ -19,22 +19,22 @@ TEST_CASE("Game basic lifecycle") {
     game.add_player(p2);
 
     CHECK(game.turn() == "Alice");
-    CHECK(game.currentPlayer() == 0);
+    CHECK(game.currentPlayerIndex() == 0);
     
     game.next_turn();
     CHECK(game.turn() == "Bob");
-    CHECK(game.currentPlayer() == 1);
+    CHECK(game.currentPlayerIndex() == 1);
 
     // Test next_turn increments round after full cycle
     game.next_turn(); // back to Alice, round 2
     CHECK(game.turn() == "Alice");
-    CHECK(game.currentPlayer() == 0);
+    CHECK(game.currentPlayerIndex() == 0);
 
     // test bribe affects next_turn logic
     game.bribe();
-    int old_turn = game.currentPlayer();
+    int old_turn = game.currentPlayerIndex();
     game.next_turn();
-    CHECK(game.currentPlayer() == old_turn); // turn should not advance due to bribe
+    CHECK(game.currentPlayerIndex() == old_turn); // turn should not advance due to bribe
 }
 
 TEST_CASE("Game::add_player and players list") {

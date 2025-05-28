@@ -5,8 +5,8 @@
 
 class Spy : public Player{
     public:
-        Spy(const std::string& name) : Player(name) { }
-        int ability(Player& player);
+        Spy(Game& game,const std::string& name, size_t index) : Player(game,name,index) { }
+        int spyAbility(Player& player);
         std::string get_type() const override;
 };
 #endif

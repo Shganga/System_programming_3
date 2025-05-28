@@ -3,11 +3,13 @@
 
 #include <iostream>
 #include <string>
+#include "actions.hpp"
 
+class Game;
 
 class Player {
 public:
-    Player(const std::string& name);
+    Player(Game& game,const std::string& name, size_t index);
     virtual ~Player();
     Player(const Player& other);
     Player& operator=(const Player& other);
@@ -17,8 +19,11 @@ public:
     void bribe();
     void arrest(Player& target);
     void sanction(Player& target);
-    void coup();
+    void coup(Player& target);
     virtual std::string get_type() const;
+    virtual void ability();
+    virtual int spyAbility(Player& target);
+    virtual void ability(Player& target);
 
 
     std::string getName() const;
@@ -30,6 +35,9 @@ public:
     void setCoins(int coins);
     void setCanArrest(bool can);
     bool getCanArrest();
+    size_t getIndex() const;
+    void setIndex(size_t index);
+    void setAction(Action action);
 
 protected:
     std::string _name;
@@ -37,6 +45,9 @@ protected:
     bool _sanctioned;
     bool _arrested;
     bool _can_arrest;
+    Game& _game;
+    Action _last_action;
+    size_t _index;
 };
 
 #endif

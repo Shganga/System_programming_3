@@ -2,7 +2,7 @@
 #include "roles/player.hpp"
 #include <random>
 #include <chrono>
-
+#include "roles/player_factory.hpp"
 
 /**
  * @brief Default constructor for the Game class.
@@ -10,7 +10,7 @@
  * Initializes the game with the current turn set to 0
  * and the current round set to 1.
  */
-Game::Game() : _current_turn(0), _current_round(1) {}
+Game::Game() : _current_turn(0), _current_round(1), isStillActive(true) {}
 
 /**
  * @brief Destructor for the Game class.
@@ -35,7 +35,8 @@ Game::~Game() {
 Game::Game(const Game& other)
     : _current_turn(other._current_turn),
       _current_round(other._current_round),
-      isbribe(other.isbribe)
+      isbribe(other.isbribe),
+      isStillActive(other.isStillActive)
 {
     _players_list = other._players_list; // shared_ptr allows safe copy
     _out_list = other._out_list;
@@ -63,12 +64,22 @@ Game& Game::operator=(const Game& other) {
 
 /**
  * @brief Adds a player to the game.
+ * check for duplicated names
  *
  * @param player A shared pointer to the Player to add.
  */
-void Game::add_player(std::shared_ptr<Player> player) {
+void Game::add_player(const std::string& name) {
+    for (const std::string& _name : players()){
+        if(_name == name){
+            throw std::runtime_error("Cant use duplicated names");
+        }
+    }
+    std::string role = roleGenerator();
+    std::shared_ptr<Player> player = PlayerFactory::createPlayer(*this,role,name,players().size() -1);
     _players_list.push_back(player);
 }
+
+
 
 /**
  * @brief Returns the name of the player whose turn it currently is.
@@ -82,7 +93,7 @@ std::string Game::turn() const {
     if (_players_list.empty()) {
         throw std::runtime_error("No players in the game");
     }
-    return _players_list[_current_turn % _players_list.size()]->getName();
+    return currentPlayer()->getName();
 }
 
 /**
@@ -93,11 +104,22 @@ std::string Game::turn() const {
  * If a bribe is active, just clears the bribe flag without advancing turn.
  */
 void Game::next_turn(){
+    manageAfterTrun();
     if(!isbribe){
         _current_turn++;
         if(_current_turn % _players_list.size() == 0){
             _current_round++;
             resetArrest();
+        }
+        if(_players_list.size() > 1){
+            std::shared_ptr<Player> current = currentPlayer();
+            if(current->get_type() == "Merchant"){
+                current->ability(); 
+            }
+            if(!canAction()){
+                current->setSanctioned(false);
+                next_turn();
+            }
         }
     }
     else{
@@ -126,6 +148,7 @@ void Game::resetArrest(){
     {
         _players_list[i]->setArrest(false);
     }
+    
 }
 
 /**
@@ -136,7 +159,10 @@ void Game::resetArrest(){
  * 
  * @return int Index of the current player in the players list.
  */
-int Game::currentPlayer() const{
+int Game::currentPlayerIndex() const{
+    if (_players_list.empty()) {
+        throw std::runtime_error("No players in the game");
+    }
     if(_current_turn == 0)
         return 0;
     return _current_turn % _players_list.size();
@@ -168,7 +194,7 @@ std::vector<std::string> Game::players() const {
  * @return true if the current player can act, false otherwise.
  */
 bool Game::canAction(){
-    std::shared_ptr<Player> player = _players_list[currentPlayer()];
+    std::shared_ptr<Player> player = currentPlayer();
     if(!player->isSanctioned() || player->getCoins() > 2){
         return true;
     }
@@ -224,7 +250,8 @@ void Game::gameCoup(const std::string& name){
     for (auto it = _players_list.begin(); it != _players_list.end(); ++it) {
         if ((*it)->getName() == name) {
             _out_list.push_back(*it);       
-            _players_list.erase(it);       
+            _players_list.erase(it);    
+            isGameDone();   
             return;                        
         }
     }
@@ -266,12 +293,57 @@ std::string Game::winner() const {
 }
 
 void Game::manageAfterTrun(){
-    if(_players_list[currentPlayer()]->isSanctioned()){
-        _players_list[currentPlayer()]->setSanctioned(false);
+    std::shared_ptr<Player> current = currentPlayer();
+    if(current->isSanctioned()){
+        current->setSanctioned(false);
     }
-    if(_players_list[currentPlayer()]->getCanArrest()){
-        _players_list[currentPlayer()]->setCanArrest(true);
+    if(current->getCanArrest()){
+        current->setCanArrest(true);
     }
+}
+
+std::shared_ptr<Player> Game::currentPlayer() const{
+    if (_players_list.empty()) {
+        throw std::runtime_error("No players available to retrieve current player.");
+    }
+    return _players_list[currentPlayerIndex()];
+}
+
+void Game::isGameDone(){
+    if(_players_list.size() == 1){
+        isStillActive = false;
+    }
+}
+
+bool Game::isGame(){
+    return isStillActive;
+}
+
+void Game::restorePlayer() {
+    if (_out_list.empty()) {
+        throw std::runtime_error("No players to restore.");
+    }
+
+    std::shared_ptr<Player> restored = _out_list.back();
+    _out_list.pop_back();
+
+    size_t idx = restored->getIndex();  // You need a getIndex() function in Player
+
+    if (idx <= _players_list.size()) {
+        // Insert at original index if possible
+        if (idx == _players_list.size()) {
+            _players_list.push_back(restored);
+        } else {
+            _players_list.insert(_players_list.begin() + idx, restored);
+        }
+    } else {
+        // If the index is too large, push to the end
+        _players_list.push_back(restored);
+    }
+}
+
+void Game::setBribe(bool bribe){
+    isbribe = bribe;
 }
 
 
