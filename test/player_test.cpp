@@ -99,12 +99,11 @@ TEST_CASE("Player::sanction") {
 
 TEST_CASE("Player::coup") {
     TestPlayer p("Kate", "Spy");
-    TestPlayer target("Liam", "Spy");
 
     p.setCoins(6);
-    CHECK(p.coup(target) == false);
+    CHECK(p.coup() == false);
 
     p.setCoins(7);
-    CHECK(p.coup(target) == true);
+    CHECK(p.coup() == true);
     CHECK(p.getCoins() == 0);
 }

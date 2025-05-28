@@ -12,12 +12,12 @@ public:
     Player(const Player& other);
     Player& operator=(const Player& other);
 
-    bool gather();
+    void gather();
     virtual bool tax();
     bool bribe();
     bool arrest(Player& target);
     bool sanction(Player& target);
-    bool coup(Player& target);
+    bool coup();
     virtual std::string get_type() const;
 
 

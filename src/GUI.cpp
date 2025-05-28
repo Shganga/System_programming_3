@@ -648,18 +648,14 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
     std::string message;
     switch (buttonIndex) {
         case 0:  // Gather
-            action = _game.getPlayers()[turn]->gather();
-            if(!action){
+            try {
+                _game.getPlayers()[turn]->gather();
+            } catch (const std::exception& e) {
                 message = "you cant use gather";
                 break;
             }
             message = "Gather action triggered\n";
-            if(_game.getPlayers()[turn]->isSanctioned()){
-                _game.getPlayers()[turn]->setSanctioned(false);
-            }
-            if(!_game.getPlayers()[_game.currentPlayer()]->getCanArrest()){
-                _game.getPlayers()[_game.currentPlayer()]->setCanArrest(true);
-            }
+            _game.manageAfterTrun();
             _game.next_turn();
             break;
         case 1:  // Tax
@@ -674,12 +670,7 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
                 message = "you cant use tax\n";
                 break;
             }
-            if(_game.getPlayers()[turn]->isSanctioned()){
-                _game.getPlayers()[turn]->setSanctioned(false);
-            }
-            if(!_game.getPlayers()[_game.currentPlayer()]->getCanArrest()){
-                _game.getPlayers()[_game.currentPlayer()]->setCanArrest(true);
-            }
+            _game.manageAfterTrun();
             _game.next_turn();
             message = "Tax action triggered\n";
             break;
@@ -695,12 +686,7 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
                 _game.next_turn();
                 break;
             }
-            if(_game.getPlayers()[turn]->isSanctioned()){
-                _game.getPlayers()[turn]->setSanctioned(false);
-            }
-            if(!_game.getPlayers()[_game.currentPlayer()]->getCanArrest()){
-                _game.getPlayers()[_game.currentPlayer()]->setCanArrest(true);
-            }
+            _game.manageAfterTrun();
             _game.bribe();
             std::cout << "Bribe action triggered\n";
             break;
@@ -713,10 +699,8 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
                     message = "you cant use arrest in general or on this player";
                     break;
                 }
-                if(_game.getPlayers()[turn]->isSanctioned()){
-                    _game.getPlayers()[turn]->setSanctioned(false);
-                }
                 message = "Arrest was triggerd on " + selected->getName();
+                _game.manageAfterTrun();
                 _game.next_turn();
                 break;
             }
@@ -732,13 +716,8 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
                     message = "you cant use sanction in general or on this player";
                     break;
                 }
-                if(_game.getPlayers()[turn]->isSanctioned()){
-                    _game.getPlayers()[turn]->setSanctioned(false);
-                }
                 message = "sanction was triggerd on " + selected->getName();
-                if(!_game.getPlayers()[_game.currentPlayer()]->getCanArrest()){
-                    _game.getPlayers()[_game.currentPlayer()]->setCanArrest(true);
-                }
+                _game.manageAfterTrun();
                 _game.next_turn();
                 break;
             }
@@ -747,7 +726,7 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
         }
         case 5:{  // Coup
             std::shared_ptr<Player> selected = displayPlayerSelection(" Choose Coup");
-            bool action = _game.getPlayers()[turn]->coup(*selected);
+            bool action = _game.getPlayers()[turn]->coup();
             if (!action){
                 message = "7 coins needed";
                 break;
@@ -759,9 +738,7 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
                 break;
             }
             _game.gameCoup(selected->getName());
-            if(!_game.getPlayers()[_game.currentPlayer()]->getCanArrest()){
-                _game.getPlayers()[_game.currentPlayer()]->setCanArrest(true);
-            }
+            _game.manageAfterTrun();
             _game.next_turn();
             std::cout << "Coup action triggered\n";
             break;
@@ -776,12 +753,7 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
                     break;
                 }
                 message = "You used barons ability";
-                if(_game.getPlayers()[turn]->isSanctioned()){
-                    _game.getPlayers()[turn]->setSanctioned(false);
-                }
-                if(!_game.getPlayers()[_game.currentPlayer()]->getCanArrest()){
-                _game.getPlayers()[_game.currentPlayer()]->setCanArrest(true);
-                }
+                _game.manageAfterTrun();
                 _game.next_turn();
                 break;
             }
@@ -795,12 +767,7 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
                     break;
                 }
                 message = "The player " + selected->getName() + " has " + std::to_string(coins) + " coins";
-                if(_game.getPlayers()[turn]->isSanctioned()){
-                    _game.getPlayers()[turn]->setSanctioned(false);
-                }
-                if(!_game.getPlayers()[_game.currentPlayer()]->getCanArrest()){
-                    _game.getPlayers()[_game.currentPlayer()]->setCanArrest(true);
-                }
+                _game.manageAfterTrun();
                 break;
             }
             else{

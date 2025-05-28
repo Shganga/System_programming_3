@@ -29,6 +29,7 @@ public:
     std::vector<std::shared_ptr<Player>> playersForSelection(const std::string& name);
     void gameCoup(const std::string& name);
     bool canAction();
+    void manageAfterTrun();
 
     
 

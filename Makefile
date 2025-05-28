@@ -23,7 +23,7 @@ SRC_FILES_NO_GUI := $(filter-out $(SRC_DIR)/GUI.cpp,$(SRC_FILES))
 # If GUI files in src/GUI/*, exclude them too (optional)
 # ROLE_SRC_FILES_NO_GUI := $(filter-out $(SRC_DIR)/$(ROLES_DIR)/GUI%.cpp,$(ROLE_SRC_FILES))
 
-MAIN_SOURCES := $(SRC_FILES_NO_GUI) $(ROLE_SRC_FILES)
+MAIN_SOURCES := $(SRC_FILES) $(ROLE_SRC_FILES)
 
 MAIN_OBJECTS := $(patsubst $(SRC_DIR)/%.cpp,$(BUILD_DIR)/%.o,$(MAIN_SOURCES))
 
@@ -67,6 +67,8 @@ $(TEST_TARGET): $(TEST_OBJECTS) $(TEST_FILES)
 # Run main executable
 run: $(MAIN_TARGET)
 	./$(MAIN_TARGET)
+
+Main: $(MAIN_TARGET)
 
 # Run valgrind on main executable
 valgrind: $(MAIN_TARGET)
