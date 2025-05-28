@@ -1,49 +1,86 @@
 CXX = g++
 CXXFLAGS = -std=c++17 -Wall -Wextra -g
+
 SFML_LIBS = -lsfml-graphics -lsfml-window -lsfml-system
 
 SRC_DIR = src
-BUILD_DIR = build
 ROLES_DIR = roles
+TEST_DIR = test
+BUILD_DIR = build
+DOCTEST_DIR = test
 
-# All .cpp files directly in src
+MAIN_TARGET = main
+TEST_TARGET = test_runner
+
+# All source files for main (include everything except GUI if needed)
 SRC_FILES := $(wildcard $(SRC_DIR)/*.cpp)
+ROLE_SRC_FILES := $(wildcard $(SRC_DIR)/$(ROLES_DIR)/*.cpp)
 
-# All .cpp files recursively inside src/roles
-ROLE_SRC_FILES := $(shell find $(SRC_DIR)/$(ROLES_DIR) -name '*.cpp')
+# For main build, include all source files except GUI
+# Assuming GUI sources are in src/GUI.cpp or src/GUI/*.cpp - exclude them here
+# Adjust the exclusion pattern as needed:
+SRC_FILES_NO_GUI := $(filter-out $(SRC_DIR)/GUI.cpp,$(SRC_FILES))
+# If GUI files in src/GUI/*, exclude them too (optional)
+# ROLE_SRC_FILES_NO_GUI := $(filter-out $(SRC_DIR)/$(ROLES_DIR)/GUI%.cpp,$(ROLE_SRC_FILES))
 
-# Combine all source files
-SOURCES := $(SRC_FILES) $(ROLE_SRC_FILES)
+MAIN_SOURCES := $(SRC_FILES_NO_GUI) $(ROLE_SRC_FILES)
 
-# Convert all source files to object files in build/ preserving directory structure
-OBJECTS := $(patsubst $(SRC_DIR)/%.cpp,$(BUILD_DIR)/%.o,$(SOURCES))
+MAIN_OBJECTS := $(patsubst $(SRC_DIR)/%.cpp,$(BUILD_DIR)/%.o,$(MAIN_SOURCES))
 
-TARGET = main
+# Test depends only on minimal sources your tests need:
+TEST_DEPENDENT_SRCS := $(SRC_DIR)/game.cpp $(SRC_DIR)/$(ROLES_DIR)/player.cpp
+TEST_OBJECTS := $(patsubst $(SRC_DIR)/%.cpp,$(BUILD_DIR)/%.o,$(TEST_DEPENDENT_SRCS))
 
-all: $(TARGET)
+# Test source files
+TEST_FILES := $(wildcard $(TEST_DIR)/*.cpp)
 
-# Create build directory and subdirs as needed
+# Create build directory if not exist
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
-# Compile each .cpp to corresponding .o in build/, creating subdirs if needed
+# Compile source files for main build
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp | $(BUILD_DIR)
 	mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) -I$(SRC_DIR) -I$(SRC_DIR)/$(ROLES_DIR) -c $< -o $@
 
-$(TARGET): $(OBJECTS)
-	$(CXX) $(OBJECTS) -o $(TARGET) $(SFML_LIBS)
+$(BUILD_DIR)/$(ROLES_DIR)/%.o: $(SRC_DIR)/$(ROLES_DIR)/%.cpp | $(BUILD_DIR)
+	mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) -I$(SRC_DIR) -I$(SRC_DIR)/$(ROLES_DIR) -c $< -o $@
 
+# Build main executable
+$(MAIN_TARGET): $(MAIN_OBJECTS)
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(SFML_LIBS)
+
+# Compile source files for test build
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp | $(BUILD_DIR)
+	mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) -I$(SRC_DIR) -I$(SRC_DIR)/$(ROLES_DIR) -c $< -o $@
+
+$(BUILD_DIR)/$(ROLES_DIR)/%.o: $(SRC_DIR)/$(ROLES_DIR)/%.cpp | $(BUILD_DIR)
+	mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) -I$(SRC_DIR) -I$(SRC_DIR)/$(ROLES_DIR) -c $< -o $@
+
+# Build tests executable: only with needed objects + tests
+$(TEST_TARGET): $(TEST_OBJECTS) $(TEST_FILES)
+	$(CXX) $(CXXFLAGS) -I$(SRC_DIR) -I$(SRC_DIR)/$(ROLES_DIR) -I$(DOCTEST_DIR) $^ -o $@
+
+# Run main executable
+run: $(MAIN_TARGET)
+	./$(MAIN_TARGET)
+
+# Run valgrind on main executable
+valgrind: $(MAIN_TARGET)
+	valgrind --leak-check=full ./$(MAIN_TARGET)
+
+# Run tests
+test: $(TEST_TARGET)
+	./$(TEST_TARGET)
+
+# Clean everything
 clean:
-	rm -rf $(BUILD_DIR) $(TARGET)
+	rm -rf $(BUILD_DIR) $(MAIN_TARGET) $(TEST_TARGET)
 
-run: $(TARGET)
-	./$(TARGET)
+.PHONY: all run valgrind test clean
 
-valgrind: $(TARGET)
-	valgrind --leak-check=full --show-leak-kinds=definite ./main
-
-
-
-
-.PHONY: all clean run
+# Default target
+all: $(MAIN_TARGET)

@@ -18,7 +18,7 @@ public:
     bool arrest(Player& target);
     bool sanction(Player& target);
     bool coup(Player& target);
-    virtual std::string get_type() const = 0;
+    virtual std::string get_type() const;
 
 
     std::string getName() const;

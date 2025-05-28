@@ -96,8 +96,12 @@ bool Player::coup(Player& target) {
     }
     _coins -= 7;
     return true;
-    // External game logic should handle actual removal
 }
+
+std::string Player::get_type() const {
+    return "Player";
+}
+
 
 std::string Player::getName() const {
     return _name;
