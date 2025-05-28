@@ -13,11 +13,11 @@ public:
     Player& operator=(const Player& other);
 
     void gather();
-    virtual bool tax();
-    bool bribe();
-    bool arrest(Player& target);
-    bool sanction(Player& target);
-    bool coup();
+    virtual void tax();
+    void bribe();
+    void arrest(Player& target);
+    void sanction(Player& target);
+    void coup();
     virtual std::string get_type() const;
 
 

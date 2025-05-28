@@ -5,7 +5,7 @@
 
 class Baron : public Player {
 public:
-    bool ability();
+    void ability();
     std::string get_type() const override;
     Baron(const std::string& name) : Player(name) { }
 };

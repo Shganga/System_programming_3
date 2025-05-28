@@ -650,34 +650,41 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
         case 0:  // Gather
             try {
                 _game.getPlayers()[turn]->gather();
+                message = "Gather action triggered\n";
+                _game.manageAfterTrun();
+                _game.next_turn();
+                break;
             } catch (const std::exception& e) {
-                message = "you cant use gather";
+                message = e.what();
                 break;
             }
-            message = "Gather action triggered\n";
-            _game.manageAfterTrun();
-            _game.next_turn();
-            break;
         case 1:  // Tax
+            try {
+                _game.getPlayers()[turn]->tax();
+                _game.manageAfterTrun();
+                _game.next_turn();
+                message = "Tax action triggered\n";
+                break;
+            } catch (const std::exception& e) {
+                message = e.what();
+                break;
+            }
             block = askAllWithRole("Governor");
             if(block){
                 message = "A Governor blocked your tax\n";
                 _game.next_turn();
                 break;
             }
-            action = _game.getPlayers()[turn]->tax();
-            if(!action){
-                message = "you cant use tax\n";
-                break;
-            }
-            _game.manageAfterTrun();
-            _game.next_turn();
-            message = "Tax action triggered\n";
-            break;
+            
         case 2:  // Bribe
-            action = _game.getPlayers()[turn]->bribe();
-            if(!action){
-                message = "you cant use bribe";
+            try {
+                _game.getPlayers()[turn]->bribe();
+                _game.manageAfterTrun();
+                _game.bribe();
+                message = "Bribe action triggered\n";
+                break;
+            } catch (const std::exception& e) {
+                message = e.what();
                 break;
             }
             block = askAllWithRole("Judge");
@@ -686,23 +693,21 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
                 _game.next_turn();
                 break;
             }
-            _game.manageAfterTrun();
-            _game.bribe();
-            std::cout << "Bribe action triggered\n";
-            break;
+            
         case 3:{//arrest  
             std::shared_ptr<Player> selected = displayPlayerSelection("Choose Arrest");
             if (selected) {
                 std::cout << "Selected player: " << selected->getName() << std::endl;
-                action = _game.getPlayers()[turn]->arrest(*selected);
-                if(!action){
-                    message = "you cant use arrest in general or on this player";
+                try {
+                    _game.getPlayers()[turn]->arrest(*selected);
+                    message = "Arrest was triggerd on " + selected->getName();
+                    _game.manageAfterTrun();
+                    _game.next_turn();
+                    break;
+                } catch (const std::exception& e) {
+                    message = e.what();
                     break;
                 }
-                message = "Arrest was triggerd on " + selected->getName();
-                _game.manageAfterTrun();
-                _game.next_turn();
-                break;
             }
             message = "You didnt select a player";
             break;
@@ -711,24 +716,32 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
             std::shared_ptr<Player> selected = displayPlayerSelection(" Choose Sunction");
             if (selected) {
                 std::cout << "Selected player: " << selected->getName() << std::endl;
-                action = _game.getPlayers()[turn]->sanction(*selected);
-                if(!action){
-                    message = "you cant use sanction in general or on this player";
+                try {
+                    _game.getPlayers()[turn]->sanction(*selected);
+                    message = "sanction was triggerd on " + selected->getName();
+                    _game.manageAfterTrun();
+                    _game.next_turn();
+                    break;
+                } catch (const std::exception& e) {
+                    message = e.what();
                     break;
                 }
-                message = "sanction was triggerd on " + selected->getName();
-                _game.manageAfterTrun();
-                _game.next_turn();
-                break;
+                
             }
             message = "You didnt select a player";
             break;
         }
         case 5:{  // Coup
             std::shared_ptr<Player> selected = displayPlayerSelection(" Choose Coup");
-            bool action = _game.getPlayers()[turn]->coup();
-            if (!action){
-                message = "7 coins needed";
+            try {
+                _game.getPlayers()[turn]->arrest(*selected);
+                _game.gameCoup(selected->getName());
+                _game.manageAfterTrun();
+                _game.next_turn();
+                std::cout << "Coup action triggered\n";
+                break;
+            } catch (const std::exception& e) {
+                message = e.what();
                 break;
             }
             block = askAllWithRole("General");
@@ -737,25 +750,21 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
                 _game.next_turn();
                 break;
             }
-            _game.gameCoup(selected->getName());
-            _game.manageAfterTrun();
-            _game.next_turn();
-            std::cout << "Coup action triggered\n";
-            break;
+            
         }
         case 6:{  // Special / Ability
             if(_game.getPlayers()[turn]->get_type() == "Baron"){
                 auto& player = _game.getPlayers()[turn];
                 Baron* baron = dynamic_cast<Baron*>(player.get());
-                action = baron->ability();
-                if(!action){
-                    message = "ability didnt work";
-                    break;
-                }
-                message = "You used barons ability";
+                try {
+                baron->ability();
+                message = "You used Baron's ability";
                 _game.manageAfterTrun();
                 _game.next_turn();
-                break;
+                } catch (const std::exception& e) {
+                    message = e.what();  // Or: message = "Ability didn't work: " + std::string(e.what());
+                }
+
             }
             else if(_game.getPlayers()[turn]->get_type() == "Spy"){
                 auto& player = _game.getPlayers()[turn];

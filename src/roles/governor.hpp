@@ -6,7 +6,7 @@
 
 class Governor : public Player{
     public:
-        bool tax() override;
+        void tax() override;
         std::string get_type() const override;
         Governor(const std::string& name) : Player(name) { }
 };

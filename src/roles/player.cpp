@@ -70,12 +70,11 @@ void Player::gather() {
  * @return false If the player is sanctioned and cannot collect tax.
  */
 
-bool Player::tax() {
+void Player::tax() {
     if (_sanctioned) {
-        return false;
+        throw std::runtime_error("Sanctioned players cannot use tax.");
     }
     _coins += 2;
-    return true;
 }
 
 /**
@@ -87,13 +86,11 @@ bool Player::tax() {
  * @return true If the bribe was successful.
  * @return false If the player does not have enough coins.
  */
-bool Player::bribe() {
+void Player::bribe() {
     if (_coins < 4) {
-        return false;
+        throw std::runtime_error("You must have 4 coins");
     }
     _coins -= 4;
-    return true;
-    // Allow extra action (external handling if needed)
 }
 
 
@@ -110,29 +107,28 @@ bool Player::bribe() {
  * - Otherwise, the target loses 1 coin and the arresting player gains 1 coin.
  *
  * @param target The player to arrest.
- * @return true If the arrest was successful.
- * @return false If the arrest conditions are not met.
  */
-bool Player::arrest(Player& target) {
+void Player::arrest(Player& target) {
     if (target._arrested) {
-        return false;
+        throw std::runtime_error("Target is already arrested.");
     }
-    if (!_can_arrest){
-        return false;
+    if (!_can_arrest) {
+        throw std::runtime_error("You are not allowed to arrest.");
     }
     if (target._coins <= 0) {
-        return false;
+        throw std::runtime_error("Target does not have enough coins to be arrested.");
     }
-    if (target.get_type() == "Merchant"){
+
+    if (target.get_type() == "Merchant") {
         target._coins -= 2;
-    }
-    else{
+    } else {
         target._coins -= 1;
         _coins += 1;
     }
+
     target._arrested = true;
-    return true;
 }
+
 
 /**
  * @brief Sets whether the player can arrest others.
@@ -160,26 +156,24 @@ bool Player::getCanArrest(){
  * If the target is a "Baron", they gain 1 coin as a side effect.
  *
  * @param target The player to sanction.
- * @return true If the sanction was successful.
- * @return false If the player lacks enough coins or other conditions are not met.
  */
-bool Player::sanction(Player& target) {
+void Player::sanction(Player& target) {
     if (_coins < 3) {
-        return false;
+        throw std::runtime_error("Not enough coins to sanction.");
     }
-    if (target.get_type() == "Baron"){
+    if (target.get_type() == "Baron") {
         target._coins++;
     }
-    if (target.get_type() == "Judge"){
+    if (target.get_type() == "Judge") {
         if (_coins < 4) {
-            return false;
+            throw std::runtime_error("Not enough coins to sanction a Judge.");
         }
         _coins--;
     }
     _coins -= 3;
     target._sanctioned = true;
-    return true;
 }
+
 
 /**
  * @brief Performs a coup action.
@@ -190,12 +184,11 @@ bool Player::sanction(Player& target) {
  * @return true If the player had enough coins and performed the coup.
  * @return false If the player had fewer than 7 coins.
  */
-bool Player::coup() {
+void Player::coup() {
     if (_coins < 7) {
-        return false;
+        throw std::runtime_error("Not enough coins to perform a coup.");
     }
     _coins -= 7;
-    return true;
 }
 
 /**
