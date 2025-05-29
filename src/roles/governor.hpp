@@ -6,9 +6,10 @@
 
 class Governor : public Player{
     public:
-        bool tax() override;
+        void tax() override;
         std::string get_type() const override;
-        Governor(const std::string& name) : Player(name) { }
+        Governor(Game& game, const std::string& name, size_t index) : Player(game, name,index) { }
+        void ability(Player& target) override;
 };
 
 #endif

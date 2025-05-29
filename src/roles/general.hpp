@@ -6,7 +6,8 @@
 class General : public Player {
 public:
     std::string get_type() const override;
-    General(const std::string& name) : Player(name) { }
+    General(Game& game, const std::string& name,size_t index) : Player(game, name,index) { }
+    void ability(Player& player) override;
 };
 
 #endif

@@ -5,9 +5,9 @@
 
 class Baron : public Player {
 public:
-    bool ability();
+    void ability() override;
     std::string get_type() const override;
-    Baron(const std::string& name) : Player(name) { }
+    Baron(Game& game, const std::string& name,size_t index) : Player(game, name, index) { }
 };
 
 #endif

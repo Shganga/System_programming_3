@@ -7,7 +7,7 @@
 
 class PlayerFactory {
 public:
-    static std::shared_ptr<Player> createPlayer(const std::string& role, const std::string& name);
+    static std::shared_ptr<Player> createPlayer(Game& game, const std::string& role, const std::string& name,int index);
 };
 
 #endif // PLAYER_FACTORY_HPP

@@ -9,22 +9,22 @@
 
 #include <algorithm>
 
-std::shared_ptr<Player> PlayerFactory::createPlayer(const std::string& role, const std::string& name) {
+std::shared_ptr<Player> PlayerFactory::createPlayer(Game& game, const std::string& role, const std::string& name, int index) {
     std::string role_lower = role;
     std::transform(role_lower.begin(), role_lower.end(), role_lower.begin(), ::tolower);
 
     if (role_lower == "spy") {
-        return std::make_shared<Spy>(name);
+        return std::make_shared<Spy>(game,name,index);
     } else if (role_lower == "merchant") {
-        return std::make_shared<Merchant>(name);
+        return std::make_shared<Merchant>(game,name,index);
     } else if (role_lower == "judge") {
-        return std::make_shared<Judge>(name);
+        return std::make_shared<Judge>(game,name,index);
     } else if (role_lower == "governor") {
-        return std::make_shared<Governor>(name);
+        return std::make_shared<Governor>(game,name,index);
     } else if (role_lower == "general") {
-        return std::make_shared<General>(name);
+        return std::make_shared<General>(game,name,index);
     } else if (role_lower == "baron") {
-        return std::make_shared<Baron>(name);
+        return std::make_shared<Baron>(game,name,index);
     } else {
         return nullptr;
     }

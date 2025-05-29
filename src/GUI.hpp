@@ -91,7 +91,7 @@ private:
     void handleGameAction(size_t buttonIndex);
     std::shared_ptr<Player> displayPlayerSelection(const std::string& title);
     bool allowAction(const std::string& playerName);
-    bool askAllWithRole(const std::string& role);
+    void askAllWithRole(const std::string& role);
     void showGameEndScreen();
 
     
