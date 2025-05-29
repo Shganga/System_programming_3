@@ -11,9 +11,16 @@
  * 
  * @param name The name of the player.
  */
-Player::Player(Game& game,const std::string& name,size_t index)
-    : _game(game) ,_name(name), _coins(0), _sanctioned(false), _arrested(false), _can_arrest(true), _last_action(Action::None), _index(index) {}
-
+Player::Player(Game& game, const std::string& name, size_t index)
+    : _name(name),
+      _coins(0),
+      _sanctioned(false),
+      _arrested(false),
+      _can_arrest(true),
+      _game(game),
+      _last_action(Action::None),
+      _index(index)
+{}
 /**
  * @brief Destructor for the Player class.
  */
@@ -27,7 +34,15 @@ Player::~Player() {}
  * @param other The Player object to copy.
  */
 Player::Player(const Player& other)
-    : _game(other._game),_name(other._name), _coins(other._coins), _sanctioned(other._sanctioned), _arrested(false), _can_arrest(true), _last_action(other._last_action), _index(other._index) {}
+    : _name(other._name),
+      _coins(other._coins),
+      _sanctioned(other._sanctioned),
+      _arrested(false),          // אם בכוונה אתה מאתחל ל־false
+      _can_arrest(true),         // כנ״ל
+      _game(other._game),
+      _last_action(other._last_action),
+      _index(other._index)
+{}
 
 
 /**
@@ -304,27 +319,49 @@ void Player::setArrest(bool status) {
     _arrested = status;
 }
 
+/**
+ * @brief Returns the index of the player in the game.
+ * 
+ * @return size_t The player's index.
+ */
 size_t Player::getIndex() const{
     return _index;
 }
 
+/**
+ * @brief Sets the player's index.
+ * 
+ * @param index The new index to assign to the player.
+ */
 void Player::setIndex(size_t index){
     _index = index;
 }
 
+/**
+ * @brief Sets the last action performed by the player.
+ * 
+ * @param action The action to set.
+ */
 void Player::setAction(Action action){
     _last_action = action;
 }
 
+/**
+ * @brief Executes the player's default ability.
+ * 
+ * @throws std::runtime_error If the player does not have a default ability.
+ */
 void Player::ability() {
     throw std::runtime_error(get_type() + " does not have a default ability.");
 }
 
 int Player::spyAbility(Player& target) {
+    (void)target;
     throw std::runtime_error(get_type() + " does not support spyAbility.");
 }
 
 void Player::ability(Player& target) {
+    (void)target;
     throw std::runtime_error(get_type() + " does not have a targeted ability.");
 }
 

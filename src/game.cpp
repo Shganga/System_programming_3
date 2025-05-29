@@ -10,7 +10,7 @@
  * Initializes the game with the current turn set to 0
  * and the current round set to 1.
  */
-Game::Game() : _current_turn(0), _current_round(1), isStillActive(true), isbribe(false) {}
+Game::Game() : _current_turn(0), _current_round(1), isbribe(false),isStillActive(true) {}
 
 /**
  * @brief Destructor for the Game class.

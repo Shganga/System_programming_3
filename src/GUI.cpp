@@ -643,7 +643,6 @@ void GameSetupGUI::handleMouseClick(sf::Vector2i mousePos) {
 void GameSetupGUI::handleGameAction(size_t buttonIndex) {
     // Assuming order matches your actions vector from setupGameScreen()
     int turn = _game.currentPlayerIndex();
-    bool block = false;
     std::string message;
     switch (buttonIndex) {
         case 0:  // Gather
@@ -721,7 +720,7 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
                 break;
             }
         }
-        case 6:{  // Special / Ability
+        case 6: // Special / Ability
             if(_game.getPlayers()[turn]->get_type() == "Baron"){
                 try {
                     _game.getPlayers()[turn]->ability();
@@ -741,10 +740,6 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
                 message = "your roles doesnt have an ability";
                 break;
             }
-        }
-        default:
-            std::cout << "Unknown action\n";
-            break;
     }
     
     
