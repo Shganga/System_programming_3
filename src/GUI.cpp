@@ -711,8 +711,14 @@ void GameSetupGUI::handleGameAction(size_t buttonIndex) {
         case 5:{  // Coup
             std::shared_ptr<Player> selected = displayPlayerSelection(" Choose Coup");
             try {
+                std::shared_ptr<Player> current = _game.currentPlayer();
                 _game.getPlayers()[turn]->coup(*selected);
-                askAllWithRole("General");
+                if(selected->get_type() == "General" && selected->getCoins() >=5){
+                    selected->ability(*current);
+                    message = "The general block the coup for himself";
+                }
+                if(current->getLastAction() == Action::Coup)
+                    askAllWithRole("General");
                 std::cout << "Coup action triggered\n";
                 break;
             } catch (const std::exception& e) {
@@ -761,7 +767,7 @@ void GameSetupGUI::askAllWithRole(const std::string& role) {
             }
             bool approved = allowAction(player->getName()); // מציג שם מלא
             if (approved) {
-                if(role == "General" && player->getCoins() < 5){
+                if((role == "General" && player->getCoins() < 5)){
                     continue;
                 }
                 player->ability(*_game.currentPlayer());

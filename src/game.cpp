@@ -410,5 +410,8 @@ bool Game::getBribe() const{
     return isbribe;
 }
 
+std::shared_ptr<Player> Game::lastPlayer(){
+    return _players_list[(_current_turn - 1) % _players_list.size()];
+}
 
 

@@ -39,6 +39,7 @@ public:
     int getTurn() const;
     std::vector<std::shared_ptr<Player>> getOutList();
     bool getBribe() const;
+    std::shared_ptr<Player> lastPlayer();
 
 private:
     std::vector<std::shared_ptr<Player>> _players_list;  
