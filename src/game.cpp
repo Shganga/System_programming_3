@@ -75,7 +75,11 @@ void Game::add_player(const std::string& name) {
         }
     }
     std::string role = roleGenerator();
-    std::shared_ptr<Player> player = PlayerFactory::createPlayer(*this,role,name,players().size() -1);
+    std::shared_ptr<Player> player;
+    if(players().empty())
+        player = PlayerFactory::createPlayer(*this,role,name,0);
+    else
+        player = PlayerFactory::createPlayer(*this,role,name,players().size());
     _players_list.push_back(player);
 }
 
