@@ -71,8 +71,8 @@ run: $(MAIN_TARGET)
 Main: $(MAIN_TARGET)
 
 # Run valgrind on main executable
-valgrind: $(MAIN_TARGET)
-	valgrind --leak-check=full ./$(MAIN_TARGET)
+valgrind: $(TEST_TARGET)
+	valgrind --leak-check=full ./$(TEST_TARGET)
 
 # Run tests
 test: $(TEST_TARGET)
