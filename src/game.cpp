@@ -292,6 +292,13 @@ std::string Game::winner() const {
     throw std::runtime_error("The game is still ongoing");
 }
 
+/**
+ * @brief Manage state updates after the current player's turn ends.
+ * 
+ * Resets sanctions and arrest permissions for the current player.
+ * - If the player is sanctioned, sanction is cleared.
+ * - If the player cannot arrest, permission is restored.
+ */
 void Game::manageAfterTrun(){
     std::shared_ptr<Player> current = currentPlayer();
     if(current->isSanctioned()){
@@ -302,6 +309,12 @@ void Game::manageAfterTrun(){
     }
 }
 
+/**
+ * @brief Get a shared pointer to the current player.
+ * 
+ * @return std::shared_ptr<Player> The player whose turn it currently is.
+ * @throws std::runtime_error If no players exist in the game.
+ */
 std::shared_ptr<Player> Game::currentPlayer() const{
     if (_players_list.empty()) {
         throw std::runtime_error("No players available to retrieve current player.");
@@ -309,16 +322,35 @@ std::shared_ptr<Player> Game::currentPlayer() const{
     return _players_list[currentPlayerIndex()];
 }
 
+/**
+ * @brief Check if the game has finished.
+ * 
+ * The game is considered done if there is only one player left.
+ * Sets the `isStillActive` flag to false if the game is over.
+ */
 void Game::isGameDone(){
     if(_players_list.size() == 1){
         isStillActive = false;
     }
 }
 
+/**
+ * @brief Query if the game is still active.
+ * 
+ * @return true if the game is ongoing, false otherwise.
+ */
 bool Game::isGame(){
     return isStillActive;
 }
 
+/**
+ * @brief Restore a player from the out list back to the active players list.
+ * 
+ * Removes the last player from the out list and inserts them back to their original position
+ * in the players list if possible; otherwise, adds to the end.
+ * 
+ * @throws std::runtime_error If the out list is empty (no players to restore).
+ */
 void Game::restorePlayer() {
     if (_out_list.empty()) {
         throw std::runtime_error("No players to restore.");
@@ -342,17 +374,38 @@ void Game::restorePlayer() {
     }
 }
 
+/**
+ * @brief Set the bribe state of the game.
+ * 
+ * @param bribe Boolean indicating whether bribery is currently active.
+ */
 void Game::setBribe(bool bribe){
     isbribe = bribe;
 }
 
+/**
+ * @brief Get the current turn number.
+ * 
+ * @return int The current turn index.
+ */
 int Game::getTurn() const{
     return _current_turn;
 }
 
+/**
+ * @brief Retrieve the list of players who have been removed from the game.
+ * 
+ * @return std::vector<std::shared_ptr<Player>> Vector containing pointers to players out of the game.
+ */
 std::vector<std::shared_ptr<Player>> Game::getOutList(){
     return _out_list;
 }
+
+/**
+ * @brief Check if bribery is currently active in the game.
+ * 
+ * @return true if bribery is active, false otherwise.
+ */
 bool Game::getBribe() const{
     return isbribe;
 }
