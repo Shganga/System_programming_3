@@ -1,4 +1,5 @@
 #include "governor.hpp"
+#include "game.hpp"
 
 
 /**
@@ -17,6 +18,8 @@ void Governor::tax() {
         throw std::runtime_error("You have 10 or more coins must coup.");
     }
     _coins += 3;
+    _last_action = Action::Tax;
+    _game.next_turn();
 }
 std::string Governor::get_type() const{
     return "Governor";
